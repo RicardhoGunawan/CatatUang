@@ -10,7 +10,9 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { MaterialIcons } from '@expo/vector-icons';
 import { categoriesAPI, walletsAPI, transactionsAPI, Category, Wallet } from '../services/api';
 
@@ -36,7 +38,8 @@ export default function AddTransactionModal({
   const [selectedType, setSelectedType] = useState<'income' | 'expense'>('expense');
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedWalletId, setSelectedWalletId] = useState<number | null>(null);
-  const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split('T')[0]);
+  const [transactionDate, setTransactionDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -77,7 +80,8 @@ export default function AddTransactionModal({
     setSelectedType('expense');
     setSelectedCategoryId(null);
     setSelectedWalletId(wallets.length > 0 ? wallets[0].id : null);
-    setTransactionDate(new Date().toISOString().split('T')[0]);
+    setTransactionDate(new Date());
+    setShowDatePicker(false);
   };
 
   const handleClose = () => {
@@ -111,7 +115,7 @@ export default function AddTransactionModal({
         category_id: selectedCategoryId!,
         amount: parseFloat(amount),
         description: description.trim() || undefined,
-        transaction_date: transactionDate,
+        transaction_date: transactionDate.toISOString().split('T')[0],
         type: selectedType,
       };
 
@@ -148,6 +152,29 @@ export default function AddTransactionModal({
     const numericValue = parseFloat(value);
     if (isNaN(numericValue)) return '';
     return new Intl.NumberFormat('id-ID').format(numericValue);
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('id-ID', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    
+    if (selectedDate) {
+      setTransactionDate(selectedDate);
+    }
+  };
+
+  const showDatePickerModal = () => {
+    setShowDatePicker(true);
   };
 
   return (
@@ -327,13 +354,41 @@ export default function AddTransactionModal({
             {/* Date */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Tanggal</Text>
-              <TextInput
-                style={styles.dateInput}
-                value={transactionDate}
-                onChangeText={setTransactionDate}
-                placeholder="YYYY-MM-DD"
-              />
+              <TouchableOpacity 
+                style={styles.dateButton}
+                onPress={showDatePickerModal}
+              >
+                <MaterialIcons name="event" size={20} color="#666" />
+                <Text style={styles.dateButtonText}>
+                  {formatDate(transactionDate)}
+                </Text>
+                <MaterialIcons name="keyboard-arrow-down" size={20} color="#666" />
+              </TouchableOpacity>
             </View>
+
+            {/* Date Picker */}
+            {showDatePicker && (
+              <DateTimePicker
+                value={transactionDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={onDateChange}
+                maximumDate={new Date()}
+                locale="id-ID"
+              />
+            )}
+
+            {/* iOS Date Picker Done Button */}
+            {Platform.OS === 'ios' && showDatePicker && (
+              <View style={styles.iosDatePickerContainer}>
+                <TouchableOpacity
+                  style={styles.iosDatePickerDoneButton}
+                  onPress={() => setShowDatePicker(false)}
+                >
+                  <Text style={styles.iosDatePickerDoneText}>Selesai</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </ScrollView>
         )}
       </View>
@@ -509,13 +564,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     minHeight: 80,
   },
-  dateInput: {
+  dateButton: {
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e0e0e0',
     paddingHorizontal: 16,
     paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dateButtonText: {
     fontSize: 16,
+    color: '#2c3e50',
+    flex: 1,
+    marginLeft: 12,
+  },
+  iosDatePickerContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    marginTop: 8,
+    paddingVertical: 8,
+  },
+  iosDatePickerDoneButton: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  iosDatePickerDoneText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
   },
 });

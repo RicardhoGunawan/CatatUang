@@ -75,7 +75,7 @@ export default function HomeScreen() {
 
   const performLogout = async () => {
     try {
-      await logout(); // fungsi logout milikmu
+      await logout();
       router.replace("/(auth)/login");
     } catch (error) {
       console.error("Logout failed:", error);
@@ -98,7 +98,7 @@ export default function HomeScreen() {
     try {
       const response = await transactionsAPI.getAll({ page: 1 });
       if (response.success && response.data) {
-        setRecentTransactions(response.data.data.slice(0, 5)); // Take only 5 recent
+        setRecentTransactions(response.data.data.slice(0, 5));
       }
     } catch (error) {
       console.error("Error loading recent transactions:", error);
@@ -112,9 +112,7 @@ export default function HomeScreen() {
       if (response.success && response.data) {
         setWallets(response.data);
 
-        // Perbaikan perhitungan total balance
         const total = response.data.reduce((sum, wallet) => {
-          // Pastikan balance adalah number dan bukan NaN
           const balance =
             typeof wallet.balance === "string"
               ? parseFloat(wallet.balance) || 0
@@ -144,7 +142,6 @@ export default function HomeScreen() {
   };
 
   const formatCurrency = (amount: number) => {
-    // Pastikan amount adalah number dan bukan NaN
     const validAmount = isNaN(amount) ? 0 : amount;
 
     return new Intl.NumberFormat("id-ID", {
@@ -165,7 +162,7 @@ export default function HomeScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
           <Text style={styles.loadingText}>Memuat data...</Text>
@@ -175,22 +172,29 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      {/* Sticky Header */}
+      <View style={styles.stickyHeader}>
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Text style={styles.greeting}>Halo, {user?.name}!</Text>
+            <Text style={styles.subtitle}>Selamat datang di CatatUang</Text>
+          </View>
+          <TouchableOpacity onPress={confirmLogout} style={styles.logoutButton}>
+            <MaterialIcons name="logout" size={24} color="#dc3545" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Scrollable Content */}
       <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContainer}
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
         }
+        showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.greeting}>Halo, {user?.name}!</Text>
-          <Text style={styles.subtitle}>Selamat datang di CatatUang</Text>
-          <TouchableOpacity onPress={confirmLogout} style={styles.logoutButton}>
-            <MaterialIcons name="logout" size={20} color="#dc3545" />
-          </TouchableOpacity>
-        </View>
-
         {/* Total Balance Card */}
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>Total Saldo</Text>
@@ -328,6 +332,9 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
+
+        {/* Bottom spacing for better scrolling experience */}
+        <View style={styles.bottomSpacing} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -338,11 +345,44 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f9fa",
   },
+  stickyHeader: {
+    backgroundColor: "#f8f9fa",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e9ecef",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  headerContent: {
+    flex: 1,
+  },
   logoutButton: {
-    position: "absolute",
-    top: 0,
-    right: 0,
     padding: 8,
+    borderRadius: 8,
+    backgroundColor: "#fff",
+    elevation: 1,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  scrollView: {
+    flex: 1,
   },
   scrollContainer: {
     padding: 16,
@@ -356,9 +396,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: "#666",
-  },
-  header: {
-    marginBottom: 24,
   },
   greeting: {
     fontSize: 24,
@@ -376,6 +413,14 @@ const styles = StyleSheet.create({
     padding: 24,
     marginBottom: 24,
     alignItems: "center",
+    elevation: 4,
+    shadowColor: "#007AFF",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   balanceLabel: {
     fontSize: 16,
@@ -398,6 +443,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   summaryLabel: {
     fontSize: 14,
@@ -432,6 +485,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 12,
     overflow: "hidden",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   transactionItem: {
     flexDirection: "row",
@@ -475,6 +536,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 12,
     overflow: "hidden",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   walletItem: {
     flexDirection: "row",
@@ -515,10 +584,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 32,
     alignItems: "center",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   emptyText: {
     fontSize: 16,
     color: "#999",
     marginTop: 8,
+  },
+  bottomSpacing: {
+    height: 20,
   },
 });
