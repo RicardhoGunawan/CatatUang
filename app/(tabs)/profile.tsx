@@ -15,11 +15,18 @@ import {
   StatusBar,
   Dimensions,
   Animated,
+  ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { authAPI, User } from "../../services/api";
+import {
+  categoriesAPI,
+  walletTypesAPI,
+  Category,
+  WalletType,
+} from "../../services/api";
 
 const { width } = Dimensions.get("window");
 
@@ -41,6 +48,35 @@ const Profile = () => {
   });
   const [showEditModal, setShowEditModal] = useState(false);
   const [updating, setUpdating] = useState(false);
+
+  // 2. State tambahan yang perlu ditambahkan setelah state yang sudah ada
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [walletTypes, setWalletTypes] = useState<WalletType[]>([]);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showWalletTypeModal, setShowWalletTypeModal] = useState(false);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [showWalletTypeForm, setShowWalletTypeForm] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null
+  );
+  const [selectedWalletType, setSelectedWalletType] =
+    useState<WalletType | null>(null);
+  const [categoryForm, setCategoryForm] = useState({
+    name: "",
+    type: "expense" as "income" | "expense",
+    icon: "",
+  });
+  const [walletTypeForm, setWalletTypeForm] = useState({
+    name: "",
+    icon: "",
+  });
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [loadingWalletTypes, setLoadingWalletTypes] = useState(false);
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [savingWalletType, setSavingWalletType] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<
+    "all" | "income" | "expense"
+  >("all");
 
   useEffect(() => {
     const loadData = async () => {
@@ -117,6 +153,237 @@ const Profile = () => {
       );
     } finally {
       setLoading(false);
+    }
+  };
+  // 3. Functions untuk handle kategori dan wallet type
+  const loadCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const response = await categoriesAPI.getAll();
+      if (response.data) {
+        setCategories(response.data);
+      }
+    } catch (error: any) {
+      console.error("Error loading categories:", error);
+      Alert.alert("Error", "Failed to load categories");
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const loadWalletTypes = async () => {
+    try {
+      setLoadingWalletTypes(true);
+      const response = await walletTypesAPI.getAll();
+      if (response.data) {
+        setWalletTypes(response.data);
+      }
+    } catch (error: any) {
+      console.error("Error loading wallet types:", error);
+      Alert.alert("Error", "Failed to load wallet types");
+    } finally {
+      setLoadingWalletTypes(false);
+    }
+  };
+
+  const handleCategoryPress = () => {
+    loadCategories();
+    setCategoryFilter("all"); // Reset filter ke 'all' saat membuka modal
+    setShowCategoryModal(true);
+  };
+
+  const handleWalletTypePress = () => {
+    loadWalletTypes();
+    setShowWalletTypeModal(true);
+  };
+
+  const handleCreateCategory = () => {
+    setCategoryForm({ name: "", type: "expense", icon: "" });
+    setSelectedCategory(null);
+    setShowCategoryForm(true);
+  };
+
+  const handleEditCategory = (category: Category) => {
+    setCategoryForm({
+      name: category.name,
+      type: category.type,
+      icon: category.icon || "",
+    });
+    setSelectedCategory(category);
+    setShowCategoryForm(true);
+  };
+
+  const handleDeleteCategory = (category: Category) => {
+    Alert.alert(
+      "Hapus Kategori",
+      `Apakah Anda yakin ingin menghapus kategori "${category.name}"?`,
+      [
+        { text: "Batal", style: "cancel" },
+        {
+          text: "Hapus",
+          style: "destructive",
+          onPress: () => performDeleteCategory(category.id),
+        },
+      ]
+    );
+  };
+
+  const performDeleteCategory = async (categoryId: number) => {
+    try {
+      await categoriesAPI.delete(categoryId);
+      Alert.alert("Berhasil", "Kategori berhasil dihapus");
+      loadCategories();
+    } catch (error: any) {
+      console.error("Error deleting category:", error);
+      Alert.alert("Error", "Gagal menghapus kategori");
+    }
+  };
+  // 2. Function untuk filter categories berdasarkan tab
+  const getFilteredCategories = () => {
+    if (categoryFilter === "all") {
+      return categories;
+    }
+    return categories.filter((category) => category.type === categoryFilter);
+  };
+  // 3. Function untuk handle tab change
+  const handleCategoryFilterChange = (filter: "all" | "income" | "expense") => {
+    setCategoryFilter(filter);
+  };
+
+  // 4. Function untuk get count categories per type
+  const getCategoryCount = (type: "all" | "income" | "expense") => {
+    if (type === "all") {
+      return categories.length;
+    }
+    return categories.filter((category) => category.type === type).length;
+  };
+
+  const handleCreateWalletType = () => {
+    setWalletTypeForm({ name: "", icon: "" });
+    setSelectedWalletType(null);
+    setShowWalletTypeForm(true);
+  };
+
+  const handleEditWalletType = (walletType: WalletType) => {
+    setWalletTypeForm({
+      name: walletType.name,
+      icon: walletType.icon || "",
+    });
+    setSelectedWalletType(walletType);
+    setShowWalletTypeForm(true);
+  };
+
+  const handleDeleteWalletType = (walletType: WalletType) => {
+    Alert.alert(
+      "Hapus Tipe Dompet",
+      `Apakah Anda yakin ingin menghapus tipe dompet "${walletType.name}"?`,
+      [
+        { text: "Batal", style: "cancel" },
+        {
+          text: "Hapus",
+          style: "destructive",
+          onPress: () => performDeleteWalletType(walletType.id),
+        },
+      ]
+    );
+  };
+
+  const performDeleteWalletType = async (walletTypeId: number) => {
+    try {
+      await walletTypesAPI.delete(walletTypeId);
+      Alert.alert("Berhasil", "Tipe dompet berhasil dihapus");
+      loadWalletTypes();
+    } catch (error: any) {
+      console.error("Error deleting wallet type:", error);
+      Alert.alert("Error", "Gagal menghapus tipe dompet");
+    }
+  };
+
+  // Category Form Functions
+  const handleSaveCategory = async () => {
+    try {
+      // Validasi
+      if (!categoryForm.name.trim()) {
+        Alert.alert("Error", "Nama kategori harus diisi");
+        return;
+      }
+
+      setSavingCategory(true);
+
+      if (selectedCategory) {
+        // Update existing category
+        const response = await categoriesAPI.update(
+          selectedCategory.id,
+          categoryForm
+        );
+        if (response.data) {
+          Alert.alert("Berhasil", "Kategori berhasil diperbarui");
+          setShowCategoryForm(false);
+          loadCategories();
+        }
+      } else {
+        // Create new category
+        const response = await categoriesAPI.create(categoryForm);
+        if (response.data) {
+          Alert.alert("Berhasil", "Kategori berhasil dibuat");
+          setShowCategoryForm(false);
+          loadCategories();
+        }
+      }
+    } catch (error: any) {
+      console.error("Error saving category:", error);
+      Alert.alert(
+        "Error",
+        error.response?.data?.message ||
+          error.message ||
+          "Gagal menyimpan kategori"
+      );
+    } finally {
+      setSavingCategory(false);
+    }
+  };
+
+  // Wallet Type Form Functions
+  const handleSaveWalletType = async () => {
+    try {
+      // Validasi
+      if (!walletTypeForm.name.trim()) {
+        Alert.alert("Error", "Nama tipe dompet harus diisi");
+        return;
+      }
+
+      setSavingWalletType(true);
+
+      if (selectedWalletType) {
+        // Update existing wallet type
+        const response = await walletTypesAPI.update(
+          selectedWalletType.id,
+          walletTypeForm
+        );
+        if (response.data) {
+          Alert.alert("Berhasil", "Tipe dompet berhasil diperbarui");
+          setShowWalletTypeForm(false);
+          loadWalletTypes();
+        }
+      } else {
+        // Create new wallet type
+        const response = await walletTypesAPI.create(walletTypeForm);
+        if (response.data) {
+          Alert.alert("Berhasil", "Tipe dompet berhasil dibuat");
+          setShowWalletTypeForm(false);
+          loadWalletTypes();
+        }
+      }
+    } catch (error: any) {
+      console.error("Error saving wallet type:", error);
+      Alert.alert(
+        "Error",
+        error.response?.data?.message ||
+          error.message ||
+          "Gagal menyimpan tipe dompet"
+      );
+    } finally {
+      setSavingWalletType(false);
     }
   };
 
@@ -408,79 +675,48 @@ const Profile = () => {
                 </View>
                 <Ionicons name="chevron-forward" size={16} color="#C1C1C1" />
               </TouchableOpacity>
+            </View>
+          </View>
+          {/* Data Management Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Kelola Data</Text>
 
-              <TouchableOpacity style={styles.menuItem} onPress={onRefresh}>
+            <View style={styles.menuContainer}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleCategoryPress}
+              >
                 <View style={styles.menuItemLeft}>
                   <View
-                    style={[styles.menuIcon, { backgroundColor: "#E8F5E8" }]}
+                    style={[styles.menuIcon, { backgroundColor: "#FFF3E0" }]}
                   >
                     <Ionicons
-                      name="refresh-outline"
+                      name="pricetags-outline"
                       size={20}
-                      color="#4CAF50"
+                      color="#FF9800"
                     />
                   </View>
-                  <Text style={styles.menuItemText}>Refresh Data</Text>
+                  <Text style={styles.menuItemText}>Kelola Kategori</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color="#C1C1C1" />
               </TouchableOpacity>
 
-              {/* Debug section for development */}
-              {/* {__DEV__ && (
-                <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={async () => {
-                    try {
-                      const token = await AsyncStorage.getItem('auth_token');
-                      console.log('Current token:', token);
-                      
-                      const response = await fetch('https://e639-27-124-95-155.ngrok-free.app/api/profile', {
-                        headers: {
-                          'Authorization': `Bearer ${token}`,
-                          'Content-Type': 'application/json',
-                          'Accept': 'application/json',
-                        },
-                      });
-                      
-                      const data = await response.json();
-                      console.log('Direct fetch response:', data);
-                      Alert.alert('API Test', JSON.stringify(data, null, 2));
-                    } catch (error) {
-                      console.error('Direct fetch error:', error);
-                      const errorMessage = error instanceof Error ? error.message : String(error);
-                      Alert.alert('API Test Error', errorMessage);
-                    }
-                  }}
-                >
-                  <View style={styles.menuItemLeft}>
-                    <View style={[styles.menuIcon, { backgroundColor: '#FFF3E0' }]}>
-                      <Ionicons name="flask-outline" size={20} color="#FF9800" />
-                    </View>
-                    <Text style={styles.menuItemText}>Debug API</Text>
+              <TouchableOpacity
+                style={[styles.menuItem, { borderBottomWidth: 0 }]}
+                onPress={handleWalletTypePress}
+              >
+                <View style={styles.menuItemLeft}>
+                  <View
+                    style={[styles.menuIcon, { backgroundColor: "#F3E5F5" }]}
+                  >
+                    <Ionicons name="wallet-outline" size={20} color="#9C27B0" />
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color="#C1C1C1" />
-                </TouchableOpacity>
-              )} */}
+                  <Text style={styles.menuItemText}>Kelola Tipe Dompet</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#C1C1C1" />
+              </TouchableOpacity>
             </View>
           </View>
-
-          {/* Debug Info Card (Development only)
-          {__DEV__ && debugInfo && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Debug Information</Text>
-              <View style={styles.debugCard}>
-                <View style={styles.debugItem}>
-                  <Text style={styles.debugLabel}>Token Status</Text>
-                  <Text style={styles.debugValue}>{debugInfo.hasToken ? 'Active' : 'Missing'}</Text>
-                </View>
-                <View style={styles.debugItem}>
-                  <Text style={styles.debugLabel}>API Endpoint</Text>
-                  <Text style={styles.debugValue} numberOfLines={1}>{debugInfo.baseUrl}</Text>
-                </View>
-              </View>
-            </View>
-          )} */}
-
           {/* Logout Section */}
           <View style={styles.section}>
             <TouchableOpacity
@@ -550,18 +786,6 @@ const Profile = () => {
               style={styles.modalForm}
               showsVerticalScrollIndicator={false}
             >
-              {/* Profile Picture Section */}
-              <View style={styles.modalAvatarSection}>
-                <View style={styles.modalAvatar}>
-                  <Text style={styles.modalAvatarText}>
-                    {editForm.name ? getInitials(editForm.name) : "U"}
-                  </Text>
-                </View>
-                <TouchableOpacity style={styles.changePhotoButton}>
-                  <Text style={styles.changePhotoText}>Change Photo</Text>
-                </TouchableOpacity>
-              </View>
-
               {/* Form Fields */}
               <View style={styles.formSection}>
                 <Text style={styles.formSectionTitle}>Informasi Pribadi</Text>
@@ -640,6 +864,672 @@ const Profile = () => {
           </KeyboardAvoidingView>
         </SafeAreaView>
       </Modal>
+      {/* Categories Modal */}
+      <Modal
+        visible={showCategoryModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              onPress={() => setShowCategoryModal(false)}
+              style={styles.modalButton}
+            >
+              <Text style={styles.modalCancelText}>Tutup</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.modalTitle}>Kelola Kategori</Text>
+
+            <TouchableOpacity
+              onPress={handleCreateCategory}
+              style={styles.modalButton}
+            >
+              <Text style={styles.modalSaveText}>Tambah</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Filter Tab */}
+          {/* Improved Filter Tab */}
+          <View style={styles.filterTabContainer}>
+            <TouchableOpacity
+              style={[
+                styles.filterTab,
+                categoryFilter === "all" && styles.filterTabActive,
+              ]}
+              onPress={() => handleCategoryFilterChange("all")}
+              activeOpacity={0.7}
+            >
+              <View style={styles.filterTabContent}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    categoryFilter === "all" && styles.iconContainerActive,
+                  ]}
+                >
+                  <Ionicons
+                    name="apps"
+                    size={16}
+                    color={categoryFilter === "all" ? "#6366F1" : "#9CA3AF"}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.filterTabText,
+                    categoryFilter === "all" && styles.filterTabTextActive,
+                  ]}
+                >
+                  Semua
+                </Text>
+                <View
+                  style={[
+                    styles.countBadge,
+                    categoryFilter === "all" && styles.countBadgeActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.countText,
+                      categoryFilter === "all" && styles.countTextActive,
+                    ]}
+                  >
+                    {getCategoryCount("all")}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterTab,
+                categoryFilter === "income" && styles.filterTabActive,
+              ]}
+              onPress={() => handleCategoryFilterChange("income")}
+              activeOpacity={0.7}
+            >
+              <View style={styles.filterTabContent}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    categoryFilter === "income" &&
+                      styles.iconContainerActiveIncome,
+                  ]}
+                >
+                  <Ionicons
+                    name="trending-up"
+                    size={16}
+                    color={categoryFilter === "income" ? "#10B981" : "#9CA3AF"}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.filterTabText,
+                    categoryFilter === "income" &&
+                      styles.filterTabTextActiveIncome,
+                  ]}
+                >
+                  Pemasukan
+                </Text>
+                <View
+                  style={[
+                    styles.countBadge,
+                    categoryFilter === "income" &&
+                      styles.countBadgeActiveIncome,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.countText,
+                      categoryFilter === "income" &&
+                        styles.countTextActiveIncome,
+                    ]}
+                  >
+                    {getCategoryCount("income")}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterTab,
+                categoryFilter === "expense" && styles.filterTabActive,
+              ]}
+              onPress={() => handleCategoryFilterChange("expense")}
+              activeOpacity={0.7}
+            >
+              <View style={styles.filterTabContent}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    categoryFilter === "expense" &&
+                      styles.iconContainerActiveExpense,
+                  ]}
+                >
+                  <Ionicons
+                    name="trending-down"
+                    size={16}
+                    color={categoryFilter === "expense" ? "#EF4444" : "#9CA3AF"}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.filterTabText,
+                    categoryFilter === "expense" &&
+                      styles.filterTabTextActiveExpense,
+                  ]}
+                >
+                  Pengeluaran
+                </Text>
+                <View
+                  style={[
+                    styles.countBadge,
+                    categoryFilter === "expense" &&
+                      styles.countBadgeActiveExpense,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.countText,
+                      categoryFilter === "expense" &&
+                        styles.countTextActiveExpense,
+                    ]}
+                  >
+                    {getCategoryCount("expense")}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {loadingCategories ? (
+            // Loading di tengah modal
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#007AFF" />
+              <Text style={styles.loadingText}>Loading categories...</Text>
+            </View>
+          ) : (
+            <ScrollView
+              style={styles.modalForm}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.dataContainer}>
+                {getFilteredCategories().map((category) => (
+                  <View key={category.id} style={styles.dataItem}>
+                    <View style={styles.dataItemLeft}>
+                      <View
+                        style={[
+                          styles.dataIcon,
+                          {
+                            backgroundColor:
+                              category.type === "income"
+                                ? "#E8F5E8"
+                                : "#FFE5E5",
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={
+                            category.type === "income"
+                              ? "arrow-down"
+                              : "arrow-up"
+                          }
+                          size={20}
+                          color={
+                            category.type === "income" ? "#4CAF50" : "#F44336"
+                          }
+                        />
+                      </View>
+                      <View style={styles.dataInfo}>
+                        <Text style={styles.dataName}>{category.name}</Text>
+                        <Text style={styles.dataType}>
+                          {category.type === "income"
+                            ? "Pemasukan"
+                            : "Pengeluaran"}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.dataActions}>
+                      <TouchableOpacity
+                        style={styles.editButton}
+                        onPress={() => handleEditCategory(category)}
+                      >
+                        <Ionicons name="pencil" size={16} color="#4A90E2" />
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => handleDeleteCategory(category)}
+                      >
+                        <Ionicons name="trash" size={16} color="#F44336" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+
+                {getFilteredCategories().length === 0 && (
+                  <View style={styles.emptyState}>
+                    <Ionicons name="pricetags-outline" size={48} color="#CCC" />
+                    <Text style={styles.emptyStateText}>
+                      {categoryFilter === "all"
+                        ? "Belum ada kategori"
+                        : categoryFilter === "income"
+                        ? "Belum ada kategori pemasukan"
+                        : "Belum ada kategori pengeluaran"}
+                    </Text>
+                    <Text style={styles.emptyStateSubtext}>
+                      Tap tombol "Tambah" untuk membuat kategori baru
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          )}
+        </SafeAreaView>
+      </Modal>
+
+      {/* Category Form Modal */}
+      <Modal
+        visible={showCategoryForm}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+          <KeyboardAvoidingView
+            style={styles.modalContent}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+          >
+            <View style={styles.modalHeader}>
+              <TouchableOpacity
+                onPress={() => setShowCategoryForm(false)}
+                style={styles.modalButton}
+              >
+                <Text style={styles.modalCancelText}>Batal</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.modalTitle}>
+                {selectedCategory ? "Edit Kategori" : "Tambah Kategori"}
+              </Text>
+
+              <TouchableOpacity
+                onPress={handleSaveCategory}
+                disabled={savingCategory}
+                style={[
+                  styles.modalButton,
+                  savingCategory && styles.modalButtonDisabled,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.modalSaveText,
+                    savingCategory && styles.modalSaveTextDisabled,
+                  ]}
+                >
+                  {savingCategory ? "Menyimpan..." : "Simpan"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.modalForm}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.formSection}>
+                <Text style={styles.formSectionTitle}>Informasi Kategori</Text>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Nama Kategori *</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={categoryForm.name}
+                    onChangeText={(text) =>
+                      setCategoryForm((prev) => ({ ...prev, name: text }))
+                    }
+                    placeholder="Masukkan nama kategori"
+                    autoCapitalize="words"
+                    returnKeyType="next"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Tipe Kategori *</Text>
+                  <View style={styles.typeSelector}>
+                    <TouchableOpacity
+                      style={[
+                        styles.typeSelectorButton,
+                        categoryForm.type === "income" &&
+                          styles.typeSelectorButtonActiveIncome,
+                      ]}
+                      onPress={() =>
+                        setCategoryForm((prev) => ({ ...prev, type: "income" }))
+                      }
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          styles.iconContainer,
+                          categoryForm.type === "income" &&
+                            styles.iconContainerIncome,
+                        ]}
+                      >
+                        <Ionicons
+                          name="trending-up"
+                          size={16}
+                          color={
+                            categoryForm.type === "income"
+                              ? "#10B981"
+                              : "#9CA3AF"
+                          }
+                        />
+                      </View>
+
+                      <Text
+                        style={[
+                          styles.typeSelectorText,
+                          categoryForm.type === "income" &&
+                            styles.typeSelectorTextIncome,
+                        ]}
+                      >
+                        Pemasukan
+                      </Text>
+
+                      {categoryForm.type === "income" && (
+                        <View style={styles.checkContainer}>
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={20}
+                            color="#10B981"
+                          />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.typeSelectorButton,
+                        categoryForm.type === "expense" &&
+                          styles.typeSelectorButtonActiveExpense,
+                      ]}
+                      onPress={() =>
+                        setCategoryForm((prev) => ({
+                          ...prev,
+                          type: "expense",
+                        }))
+                      }
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          styles.iconContainer,
+                          categoryForm.type === "expense" &&
+                            styles.iconContainerExpense,
+                        ]}
+                      >
+                        <Ionicons
+                          name="trending-down"
+                          size={16}
+                          color={
+                            categoryForm.type === "expense"
+                              ? "#EF4444"
+                              : "#9CA3AF"
+                          }
+                        />
+                      </View>
+
+                      <Text
+                        style={[
+                          styles.typeSelectorText,
+                          categoryForm.type === "expense" &&
+                            styles.typeSelectorTextExpense,
+                        ]}
+                      >
+                        Pengeluaran
+                      </Text>
+
+                      {categoryForm.type === "expense" && (
+                        <View style={styles.checkContainer}>
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={20}
+                            color="#EF4444"
+                          />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Icon (Opsional)</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={categoryForm.icon}
+                    onChangeText={(text) =>
+                      setCategoryForm((prev) => ({ ...prev, icon: text }))
+                    }
+                    placeholder="Masukkan nama icon (contoh: food, car, home)"
+                    autoCapitalize="none"
+                    returnKeyType="done"
+                  />
+                  <Text style={styles.inputHelper}>
+                    Icon akan ditampilkan sebagai emoji atau simbol
+                  </Text>
+                </View>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Wallet Type Form Modal */}
+      <Modal
+        visible={showWalletTypeForm}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+          <KeyboardAvoidingView
+            style={styles.modalContent}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+          >
+            <View style={styles.modalHeader}>
+              <TouchableOpacity
+                onPress={() => setShowWalletTypeForm(false)}
+                style={styles.modalButton}
+              >
+                <Text style={styles.modalCancelText}>Batal</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.modalTitle}>
+                {selectedWalletType ? "Edit Tipe Dompet" : "Tambah Tipe Dompet"}
+              </Text>
+
+              <TouchableOpacity
+                onPress={handleSaveWalletType}
+                disabled={savingWalletType}
+                style={[
+                  styles.modalButton,
+                  savingWalletType && styles.modalButtonDisabled,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.modalSaveText,
+                    savingWalletType && styles.modalSaveTextDisabled,
+                  ]}
+                >
+                  {savingWalletType ? "Menyimpan..." : "Simpan"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.modalForm}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.formSection}>
+                <Text style={styles.formSectionTitle}>
+                  Informasi Tipe Dompet
+                </Text>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Nama Tipe Dompet *</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={walletTypeForm.name}
+                    onChangeText={(text) =>
+                      setWalletTypeForm((prev) => ({ ...prev, name: text }))
+                    }
+                    placeholder="Masukkan nama tipe dompet"
+                    autoCapitalize="words"
+                    returnKeyType="next"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Icon (Opsional)</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={walletTypeForm.icon}
+                    onChangeText={(text) =>
+                      setWalletTypeForm((prev) => ({ ...prev, icon: text }))
+                    }
+                    placeholder="Masukkan nama icon (contoh: wallet, bank, cash)"
+                    autoCapitalize="none"
+                    returnKeyType="done"
+                  />
+                  <Text style={styles.inputHelper}>
+                    Icon akan ditampilkan sebagai emoji atau simbol
+                  </Text>
+                </View>
+
+                <View style={styles.formPreview}>
+                  <Text style={styles.formPreviewTitle}>Preview</Text>
+                  <View style={styles.previewItem}>
+                    <View
+                      style={[styles.dataIcon, { backgroundColor: "#F3E5F5" }]}
+                    >
+                      <Ionicons
+                        name="wallet-outline"
+                        size={20}
+                        color="#9C27B0"
+                      />
+                    </View>
+                    <View style={styles.dataInfo}>
+                      <Text style={styles.dataName}>
+                        {walletTypeForm.name || "Nama Tipe Dompet"}
+                      </Text>
+                      <Text style={styles.dataType}>Tipe Dompet</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Wallet Types Modal */}
+      <Modal
+        visible={showWalletTypeModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              onPress={() => setShowWalletTypeModal(false)}
+              style={styles.modalButton}
+            >
+              <Text style={styles.modalCancelText}>Tutup</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.modalTitle}>Kelola Tipe Dompet</Text>
+
+            <TouchableOpacity
+              onPress={handleCreateWalletType}
+              style={styles.modalButton}
+            >
+              <Text style={styles.modalSaveText}>Tambah</Text>
+            </TouchableOpacity>
+          </View>
+
+          {loadingWalletTypes ? (
+            // Loading di tengah modal
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#007AFF" />
+              <Text style={styles.loadingText}>Loading wallet types...</Text>
+            </View>
+          ) : (
+            <ScrollView
+              style={styles.modalForm}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.dataContainer}>
+                {walletTypes.map((walletType) => (
+                  <View key={walletType.id} style={styles.dataItem}>
+                    <View style={styles.dataItemLeft}>
+                      <View
+                        style={[
+                          styles.dataIcon,
+                          { backgroundColor: "#F3E5F5" },
+                        ]}
+                      >
+                        <Ionicons
+                          name="wallet-outline"
+                          size={20}
+                          color="#9C27B0"
+                        />
+                      </View>
+                      <View style={styles.dataInfo}>
+                        <Text style={styles.dataName}>{walletType.name}</Text>
+                        <Text style={styles.dataType}>Tipe Dompet</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.dataActions}>
+                      <TouchableOpacity
+                        style={styles.editButton}
+                        onPress={() => handleEditWalletType(walletType)}
+                      >
+                        <Ionicons name="pencil" size={16} color="#4A90E2" />
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => handleDeleteWalletType(walletType)}
+                      >
+                        <Ionicons name="trash" size={16} color="#F44336" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+
+                {walletTypes.length === 0 && (
+                  <View style={styles.emptyState}>
+                    <Ionicons name="wallet-outline" size={48} color="#CCC" />
+                    <Text style={styles.emptyStateText}>
+                      Belum ada tipe dompet
+                    </Text>
+                    <Text style={styles.emptyStateSubtext}>
+                      Tap tombol "Tambah" untuk membuat tipe dompet baru
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          )}
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -671,10 +1561,10 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     backgroundColor: "#4A90E2",
-    paddingTop: 35,
+    paddingTop: 55,
     paddingBottom: 30,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    // borderBottomLeftRadius: 24,
+    // borderBottomRightRadius: 24,
     shadowColor: "#4A90E2",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
@@ -685,7 +1575,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 10,
   },
   avatarContainer: {
     position: "relative",
@@ -980,7 +1870,7 @@ const styles = StyleSheet.create({
   formSection: {
     backgroundColor: "#FFFFFF",
     marginHorizontal: 20,
-    marginBottom: 20,
+    marginTop: 30,
     borderRadius: 16,
     padding: 20,
     shadowColor: "#000",
@@ -1020,6 +1910,322 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
     fontWeight: "500",
+  },
+  dataContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  dataItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  dataItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  dataIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  dataInfo: {
+    flex: 1,
+  },
+  dataName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 4,
+  },
+  dataType: {
+    fontSize: 14,
+    color: "#666",
+  },
+  dataActions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  editButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#E3F2FD",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+  },
+  deleteButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#FFEBEE",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#999",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: "#CCC",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  filterTabContainer: {
+    flexDirection: "row",
+    backgroundColor: "#F1F5F9",
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 16,
+    padding: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  filterTab: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    borderRadius: 12,
+    marginHorizontal: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 60,
+  },
+  filterTabActive: {
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#6366F1",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  filterTabContent: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  iconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
+  },
+  iconContainerActive: {
+    backgroundColor: "#EEF2FF",
+  },
+  iconContainerActiveIncome: {
+    backgroundColor: "#ECFDF5",
+  },
+  iconContainerActiveExpense: {
+    backgroundColor: "#FEF2F2",
+  },
+  filterTabText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#6B7280",
+    textAlign: "center",
+    marginBottom: 2,
+  },
+  filterTabTextActive: {
+    color: "#6366F1",
+    fontWeight: "600",
+  },
+  filterTabTextActiveIncome: {
+    color: "#10B981",
+    fontWeight: "600",
+  },
+  filterTabTextActiveExpense: {
+    color: "#EF4444",
+    fontWeight: "600",
+  },
+  countBadge: {
+    backgroundColor: "#E5E7EB",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  countBadgeActive: {
+    backgroundColor: "#EEF2FF",
+  },
+  countBadgeActiveIncome: {
+    backgroundColor: "#ECFDF5",
+  },
+  countBadgeActiveExpense: {
+    backgroundColor: "#FEF2F2",
+  },
+  countText: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  countTextActive: {
+    color: "#6366F1",
+  },
+  countTextActiveIncome: {
+    color: "#10B981",
+  },
+  countTextActiveExpense: {
+    color: "#EF4444",
+  },
+  typeSelector: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  typeSelectorButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1.5,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  typeSelectorButtonActiveIncome: {
+    backgroundColor: "#ECFDF5",
+    borderColor: "#10B981",
+    shadowColor: "#10B981",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  typeSelectorButtonActiveExpense: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#EF4444",
+    shadowColor: "#EF4444",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  iconContainerIncome: {
+    backgroundColor: "#D1FAE5",
+  },
+  iconContainerExpense: {
+    backgroundColor: "#FEE2E2",
+  },
+  textContainer: {
+    flex: 1,
+    alignItems: "flex-start",
+  },
+  typeSelectorText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#6B7280",
+    marginBottom: 2,
+  },
+  typeSelectorTextIncome: {
+    color: "#10B981",
+  },
+  typeSelectorTextExpense: {
+    color: "#EF4444",
+  },
+  typeSelectorSubtext: {
+    fontSize: 12,
+    fontWeight: "400",
+    color: "#9CA3AF",
+  },
+  typeSelectorSubtextIncome: {
+    color: "#059669",
+  },
+  typeSelectorSubtextExpense: {
+    color: "#DC2626",
+  },
+  checkContainer: {
+    marginLeft: 8,
+  },
+  inputHelper: {
+    fontSize: 12,
+    color: "#999",
+    marginTop: 4,
+  },
+  formPreview: {
+    backgroundColor: "#FFFFFF",
+    marginHorizontal: 20,
+    marginTop: 24,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  formPreviewTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 12,
+  },
+  previewItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 4,
+  },
+  loadingContainerCategory: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+
+  loadingSpinnerCategory: {
+    width: 40,
+    height: 40,
+    borderWidth: 4,
+    borderColor: "#4A90E2",
+    borderTopColor: "transparent",
+    borderRadius: 20,
+    marginBottom: 12,
+    // Hanya jika pakai custom spinner, kalau pakai ActivityIndicator, abaikan
+  },
+
+  loadingTextCategory: {
+    color: "#666",
+    fontSize: 16,
   },
 });
 

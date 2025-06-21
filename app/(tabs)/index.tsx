@@ -164,7 +164,7 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#4A90E2" />
           <Text style={styles.loadingText}>Memuat data...</Text>
         </View>
       </SafeAreaView>
@@ -173,15 +173,22 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      {/* Sticky Header */}
+      {/* Compact Sticky Header */}
       <View style={styles.stickyHeader}>
         <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Text style={styles.greeting}>Halo, {user?.name}!</Text>
-            <Text style={styles.subtitle}>Selamat datang di CatatUang</Text>
+          <View style={styles.headerLeft}>
+            <View style={styles.userAvatar}>
+              <Text style={styles.avatarText}>
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </Text>
+            </View>
+            <View style={styles.headerContent}>
+              <Text style={styles.greeting}>Halo, {user?.name}!</Text>
+              <Text style={styles.subtitle}>Kelola keuangan Anda</Text>
+            </View>
           </View>
           <TouchableOpacity onPress={confirmLogout} style={styles.logoutButton}>
-            <MaterialIcons name="logout" size={24} color="#dc3545" />
+            <MaterialIcons name="logout" size={20} color="#FF6B6B" />
           </TouchableOpacity>
         </View>
       </View>
@@ -195,57 +202,79 @@ export default function HomeScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Total Balance Card */}
+        {/* Enhanced Balance Card with Gradient Effect */}
         <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Total Saldo</Text>
-          <Text style={styles.balanceAmount}>
-            {formatCurrency(totalBalance)}
-          </Text>
+          <View style={styles.balanceCardOverlay} />
+          <View style={styles.balanceContent}>
+            <Text style={styles.balanceLabel}>Total Saldo</Text>
+            <Text style={styles.balanceAmount}>
+              {formatCurrency(totalBalance)}
+            </Text>
+            <View style={styles.balanceIndicator}>
+              <MaterialIcons name="account-balance-wallet" size={16} color="#fff" />
+              <Text style={styles.balanceSubtext}>Semua Dompet</Text>
+            </View>
+          </View>
         </View>
 
-        {/* Summary Cards */}
+        {/* Enhanced Summary Cards */}
         {summary && (
           <View style={styles.summaryContainer}>
-            <View style={[styles.summaryCard, { backgroundColor: "#e8f5e8" }]}>
-              <MaterialIcons name="trending-up" size={24} color="#28a745" />
-              <Text style={styles.summaryLabel}>Pemasukan</Text>
-              <Text style={[styles.summaryAmount, { color: "#28a745" }]}>
-                {formatCurrency(summary.summary.total_income)}
-              </Text>
+            <View style={[styles.summaryCard, styles.incomeCard]}>
+              <View style={styles.summaryIconContainer}>
+                <MaterialIcons name="trending-up" size={22} color="#27AE60" />
+              </View>
+              <View style={styles.summaryTextContainer}>
+                <Text style={styles.summaryLabel}>Pemasukan</Text>
+                <Text style={[styles.summaryAmount, { color: "#27AE60" }]}>
+                  {formatCurrency(summary.summary.total_income)}
+                </Text>
+              </View>
             </View>
-            <View style={[styles.summaryCard, { backgroundColor: "#ffeaea" }]}>
-              <MaterialIcons name="trending-down" size={24} color="#dc3545" />
-              <Text style={styles.summaryLabel}>Pengeluaran</Text>
-              <Text style={[styles.summaryAmount, { color: "#dc3545" }]}>
-                {formatCurrency(summary.summary.total_expense)}
-              </Text>
+            <View style={[styles.summaryCard, styles.expenseCard]}>
+              <View style={styles.summaryIconContainer}>
+                <MaterialIcons name="trending-down" size={22} color="#E74C3C" />
+              </View>
+              <View style={styles.summaryTextContainer}>
+                <Text style={styles.summaryLabel}>Pengeluaran</Text>
+                <Text style={[styles.summaryAmount, { color: "#E74C3C" }]}>
+                  {formatCurrency(summary.summary.total_expense)}
+                </Text>
+              </View>
             </View>
           </View>
         )}
 
-        {/* Recent Transactions */}
+        {/* Enhanced Recent Transactions */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Transaksi Terbaru</Text>
-            <TouchableOpacity onPress={() => router.push("/transactions")}>
+            <TouchableOpacity onPress={() => router.push("/transactions")} style={styles.seeAllButton}>
               <Text style={styles.seeAll}>Lihat Semua</Text>
+              <MaterialIcons name="arrow-forward-ios" size={12} color="#4A90E2" />
             </TouchableOpacity>
           </View>
 
           {recentTransactions.length > 0 ? (
             <View style={styles.transactionList}>
-              {recentTransactions.map((transaction) => (
-                <View key={transaction.id} style={styles.transactionItem}>
-                  <View style={styles.transactionIcon}>
+              {recentTransactions.map((transaction, index) => (
+                <View key={transaction.id} style={[
+                  styles.transactionItem,
+                  index === recentTransactions.length - 1 && styles.lastTransactionItem
+                ]}>
+                  <View style={[
+                    styles.transactionIcon,
+                    transaction.type === "income" ? styles.incomeIcon : styles.expenseIcon
+                  ]}>
                     <MaterialIcons
                       name={
                         transaction.type === "income"
                           ? "trending-up"
                           : "trending-down"
                       }
-                      size={20}
+                      size={18}
                       color={
-                        transaction.type === "income" ? "#28a745" : "#dc3545"
+                        transaction.type === "income" ? "#27AE60" : "#E74C3C"
                       }
                     />
                   </View>
@@ -253,54 +282,63 @@ export default function HomeScreen() {
                     <Text style={styles.transactionCategory}>
                       {transaction.category?.name || "Tanpa Kategori"}
                     </Text>
-                    <Text style={styles.transactionDescription}>
+                    <Text style={styles.transactionDescription} numberOfLines={1}>
                       {transaction.description || "Tidak ada deskripsi"}
                     </Text>
                     <Text style={styles.transactionDate}>
                       {formatDate(transaction.transaction_date)}
                     </Text>
                   </View>
-                  <Text
-                    style={[
-                      styles.transactionAmount,
-                      {
-                        color:
-                          transaction.type === "income" ? "#28a745" : "#dc3545",
-                      },
-                    ]}
-                  >
-                    {transaction.type === "income" ? "+" : "-"}
-                    {formatCurrency(transaction.amount)}
-                  </Text>
+                  <View style={styles.transactionAmountContainer}>
+                    <Text
+                      style={[
+                        styles.transactionAmount,
+                        {
+                          color:
+                            transaction.type === "income" ? "#27AE60" : "#E74C3C",
+                        },
+                      ]}
+                    >
+                      {transaction.type === "income" ? "+" : "-"}
+                      {formatCurrency(transaction.amount)}
+                    </Text>
+                  </View>
                 </View>
               ))}
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <MaterialIcons name="receipt-long" size={48} color="#ccc" />
+              <View style={styles.emptyIconContainer}>
+                <MaterialIcons name="receipt-long" size={40} color="#BDC3C7" />
+              </View>
               <Text style={styles.emptyText}>Belum ada transaksi</Text>
+              <Text style={styles.emptySubtext}>Mulai catat transaksi Anda</Text>
             </View>
           )}
         </View>
 
-        {/* Wallets */}
+        {/* Enhanced Wallets */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Dompet Saya</Text>
-            <TouchableOpacity onPress={() => router.push("/wallets")}>
+            <TouchableOpacity onPress={() => router.push("/wallets")} style={styles.seeAllButton}>
               <Text style={styles.seeAll}>Kelola</Text>
+              <MaterialIcons name="arrow-forward-ios" size={12} color="#4A90E2" />
             </TouchableOpacity>
           </View>
 
           {wallets.length > 0 ? (
             <View style={styles.walletList}>
-              {wallets.slice(0, 3).map((wallet) => (
-                <View key={wallet.id} style={styles.walletItem}>
+              {wallets.slice(0, 3).map((wallet, index) => (
+                <View key={wallet.id} style={[
+                  styles.walletItem,
+                  index === Math.min(wallets.length - 1, 2) && styles.lastWalletItem
+                ]}>
                   <View style={styles.walletIcon}>
                     <MaterialIcons
                       name="account-balance-wallet"
-                      size={20}
-                      color="#007AFF"
+                      size={18}
+                      color="#4A90E2"
                     />
                   </View>
                   <View style={styles.walletDetails}>
@@ -309,26 +347,31 @@ export default function HomeScreen() {
                       {wallet.user_wallet_type?.name || "Dompet"}
                     </Text>
                   </View>
-                  <Text style={styles.walletBalance}>
-                    {formatCurrency(
-                      typeof wallet.balance === "string"
-                        ? parseFloat(wallet.balance) || 0
-                        : typeof wallet.balance === "number"
-                        ? wallet.balance
-                        : 0
-                    )}
-                  </Text>
+                  <View style={styles.walletBalanceContainer}>
+                    <Text style={styles.walletBalance}>
+                      {formatCurrency(
+                        typeof wallet.balance === "string"
+                          ? parseFloat(wallet.balance) || 0
+                          : typeof wallet.balance === "number"
+                          ? wallet.balance
+                          : 0
+                      )}
+                    </Text>
+                  </View>
                 </View>
               ))}
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <MaterialIcons
-                name="account-balance-wallet"
-                size={48}
-                color="#ccc"
-              />
+              <View style={styles.emptyIconContainer}>
+                <MaterialIcons
+                  name="account-balance-wallet"
+                  size={40}
+                  color="#BDC3C7"
+                />
+              </View>
               <Text style={styles.emptyText}>Belum ada dompet</Text>
+              <Text style={styles.emptySubtext}>Tambahkan dompet pertama Anda</Text>
             </View>
           )}
         </View>
@@ -343,27 +386,45 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#F8FAFC",
   },
+  // Compact Header Styles
   stickyHeader: {
-    backgroundColor: "#f8f9fa",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e9ecef",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
+    backgroundColor: "#4A90E2",
+    // borderBottomLeftRadius: 24,
+    // borderBottomRightRadius: 24,
+    shadowColor: "#4A90E2",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  userAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "rgba(255, 255, 255, 0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  avatarText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
   },
   headerContent: {
     flex: 1,
@@ -371,15 +432,9 @@ const styles = StyleSheet.create({
   logoutButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: "#fff",
-    elevation: 1,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
   },
   scrollView: {
     flex: 1,
@@ -395,44 +450,77 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#666",
+    color: "#64748B",
   },
   greeting: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#2c3e50",
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   subtitle: {
-    fontSize: 16,
-    color: "#7f8c8d",
-    marginTop: 4,
+    fontSize: 13,
+    color: "rgba(255, 255, 255, 0.8)",
+    marginTop: 2,
   },
+  // Enhanced Balance Card
   balanceCard: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#4A90E2",
     borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
-    alignItems: "center",
-    elevation: 4,
-    shadowColor: "#007AFF",
+    padding: 20,
+    marginBottom: 20,
+    position: "relative",
+    overflow: "hidden",
+    elevation: 6,
+    shadowColor: "#4A90E2",
     shadowOffset: {
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
   },
+  balanceCardOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 16,
+  },
+  balanceContent: {
+    alignItems: "center",
+    position: "relative",
+  },
   balanceLabel: {
-    fontSize: 16,
-    color: "#fff",
-    opacity: 0.8,
+    fontSize: 14,
+    color: "#FFFFFF",
+    opacity: 0.9,
+    fontWeight: "500",
   },
   balanceAmount: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#fff",
-    marginTop: 8,
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    marginTop: 4,
+    letterSpacing: -0.5,
   },
+  balanceIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 12,
+  },
+  balanceSubtext: {
+    fontSize: 12,
+    color: "#FFFFFF",
+    marginLeft: 4,
+    fontWeight: "500",
+  },
+  // Enhanced Summary Cards
   summaryContainer: {
     flexDirection: "row",
     gap: 12,
@@ -442,8 +530,9 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 12,
     padding: 16,
+    flexDirection: "row",
     alignItems: "center",
-    elevation: 2,
+    elevation: 3,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -452,15 +541,37 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
+  incomeCard: {
+    backgroundColor: "#FFFFFF",
+    borderLeftWidth: 4,
+    borderLeftColor: "#27AE60",
+  },
+  expenseCard: {
+    backgroundColor: "#FFFFFF",
+    borderLeftWidth: 4,
+    borderLeftColor: "#E74C3C",
+  },
+  summaryIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F8FAFC",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  summaryTextContainer: {
+    flex: 1,
+  },
   summaryLabel: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 8,
+    fontSize: 12,
+    color: "#64748B",
+    fontWeight: "500",
   },
   summaryAmount: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginTop: 4,
+    fontSize: 16,
+    fontWeight: "700",
+    marginTop: 2,
   },
   section: {
     marginBottom: 24,
@@ -473,114 +584,143 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#2c3e50",
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+  seeAllButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   seeAll: {
     fontSize: 14,
-    color: "#007AFF",
+    color: "#4A90E2",
     fontWeight: "600",
+    marginRight: 4,
   },
+  // Enhanced Transaction List
   transactionList: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     overflow: "hidden",
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
   },
   transactionItem: {
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: "#F1F5F9",
+  },
+  lastTransactionItem: {
+    borderBottomWidth: 0,
   },
   transactionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#f8f9fa",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
+  incomeIcon: {
+    backgroundColor: "#DCFCE7",
+  },
+  expenseIcon: {
+    backgroundColor: "#FEF2F2",
+  },
   transactionDetails: {
     flex: 1,
+    marginRight: 8,
   },
   transactionCategory: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
-    color: "#2c3e50",
+    color: "#1E293B",
   },
   transactionDescription: {
-    fontSize: 14,
-    color: "#666",
+    fontSize: 13,
+    color: "#64748B",
     marginTop: 2,
   },
   transactionDate: {
-    fontSize: 12,
-    color: "#999",
+    fontSize: 11,
+    color: "#94A3B8",
     marginTop: 2,
   },
-  transactionAmount: {
-    fontSize: 16,
-    fontWeight: "bold",
+  transactionAmountContainer: {
+    alignItems: "flex-end",
   },
+  transactionAmount: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  // Enhanced Wallet List
   walletList: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     overflow: "hidden",
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
   },
   walletItem: {
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: "#F1F5F9",
+  },
+  lastWalletItem: {
+    borderBottomWidth: 0,
   },
   walletIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#e6f3ff",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#EBF4FF",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
   walletDetails: {
     flex: 1,
+    marginRight: 8,
   },
   walletName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
-    color: "#2c3e50",
+    color: "#1E293B",
   },
   walletType: {
-    fontSize: 14,
-    color: "#666",
+    fontSize: 13,
+    color: "#64748B",
     marginTop: 2,
   },
-  walletBalance: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#2c3e50",
+  walletBalanceContainer: {
+    alignItems: "flex-end",
   },
+  walletBalance: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+  // Enhanced Empty State
   emptyState: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 32,
     alignItems: "center",
@@ -588,15 +728,29 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+  },
+  emptyIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#F8FAFC",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
   },
   emptyText: {
     fontSize: 16,
-    color: "#999",
-    marginTop: 8,
+    color: "#64748B",
+    fontWeight: "600",
+  },
+  emptySubtext: {
+    fontSize: 13,
+    color: "#94A3B8",
+    marginTop: 4,
   },
   bottomSpacing: {
     height: 20,
