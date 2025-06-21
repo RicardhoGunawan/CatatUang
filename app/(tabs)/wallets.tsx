@@ -313,7 +313,7 @@ function WalletsScreenContent() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Memuat data...</Text>
+        <Text style={styles.loadingText}>Memuat dompet...</Text>
       </View>
     );
   }
@@ -523,10 +523,11 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: "700",
+    fontSize: 24,
+    fontWeight: "bold",
     color: "#1D1D1F",
     marginBottom: 4,
+    marginTop: 10,
   },
   headerSubtitle: {
     fontSize: 14,
