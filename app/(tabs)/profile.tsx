@@ -557,13 +557,19 @@ const Profile = () => {
     extrapolate: "clamp",
   });
 
-  if (loading && !user) {
+    if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#4A90E2" />
+        {/* StatusBar untuk loading state */}
+        <StatusBar
+          animated={true}
+          backgroundColor="#4A90E2"
+          barStyle="light-content"
+          translucent={false}
+        />
         <View style={styles.loadingContainer}>
-          <View style={styles.loadingSpinner} />
-          <Text style={styles.loadingText}>Loading your profile...</Text>
+          <ActivityIndicator size="large" color="#4A90E2" />
+          <Text style={styles.loadingText}>Memuat Profil...</Text>
         </View>
       </SafeAreaView>
     );
@@ -571,8 +577,12 @@ const Profile = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#4A90E2" />
-
+      <StatusBar
+        animated={true}
+        backgroundColor="#4A90E2"
+        barStyle="light-content"
+        translucent={false}
+      />  
       {/* Animated Header */}
       <Animated.View
         style={[
@@ -758,7 +768,7 @@ const Profile = () => {
                 onPress={() => setShowEditModal(false)}
                 style={styles.modalButton}
               >
-                <Text style={styles.modalCancelText}>Batal</Text>
+                <Text style={styles.modalCancelText}>Tutup</Text>
               </TouchableOpacity>
 
               <Text style={styles.modalTitle}>Edit Profile</Text>

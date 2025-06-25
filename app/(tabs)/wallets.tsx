@@ -331,18 +331,34 @@ function WalletsScreenContent() {
     </TouchableOpacity>
   );
 
-  if (loading) {
+   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={styles.loadingText}>Memuat dompet...</Text>
-      </View>
+      <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+        {/* StatusBar untuk loading state */}
+        <StatusBar
+          animated={true}
+          backgroundColor="#4A90E2"
+          barStyle="light-content"
+          translucent={false}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4A90E2" />
+          <Text style={styles.loadingText}>Memuat Dompet...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      {/* StatusBar dengan warna yang sesuai header */}
+      <StatusBar
+        animated={true}
+        backgroundColor="#4A90E2"
+        barStyle="light-content"
+        translucent={false}
+      />
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
@@ -459,7 +475,7 @@ function WalletsScreenContent() {
               onPress={closeModal}
               activeOpacity={0.7}
             >
-              <Text style={styles.cancelButton}>Batal</Text>
+              <Text style={styles.cancelButton}>Tutup</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>
               {editingWallet ? "Edit Dompet" : "Tambah Dompet Baru"}
@@ -889,7 +905,7 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     fontSize: 16,
-    color: "#F44336",
+    color: "#333",
     fontWeight: "500",
   },
   saveButton: {

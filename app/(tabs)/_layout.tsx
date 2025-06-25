@@ -1,9 +1,139 @@
-import React from 'react';
-import { Tabs } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
+import { Tabs, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform, BackHandler, Alert } from 'react-native';
+import { TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function TabsLayout() {
+  const router = useRouter();
+  const navigation = useNavigation();
+  const { logout } = useAuth();
+  const tabHistoryRef = useRef<string[]>(['index']); // Start with index as first tab
+  const currentTabRef = useRef<string>('index');
+
+  // Function to add tab to history
+  const addToHistory = (tabName: string) => {
+    const history = tabHistoryRef.current;
+    
+    // Don't add if it's the same as current tab
+    if (history[history.length - 1] === tabName) return;
+    
+    // Add new tab to history
+    history.push(tabName);
+    
+    // Keep only last 10 tabs to prevent memory issues
+    if (history.length > 10) {
+      tabHistoryRef.current = history.slice(-10);
+    }
+    
+    currentTabRef.current = tabName;
+    
+    console.log('Tab History:', tabHistoryRef.current); // Debug log
+  };
+
+  useEffect(() => {
+    // Listener untuk track tab changes
+    const unsubscribe = navigation.addListener('state', (e) => {
+      const state = e.data.state;
+      if (state && state.routes && state.routes[state.index]) {
+        const currentRoute = state.routes[state.index];
+        if (currentRoute.state && currentRoute.state.routes && currentRoute.state.index !== undefined) {
+          const currentTab = currentRoute.state.routes[currentRoute.state.index].name;
+          
+          // Update current tab reference
+          currentTabRef.current = currentTab;
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  useEffect(() => {
+    const backAction = () => {
+      const currentTab = currentTabRef.current;
+      const tabHistory = [...tabHistoryRef.current]; // Create copy
+      
+      console.log('Back pressed. Current tab:', currentTab);
+      console.log('Current history:', tabHistory);
+
+      // If we're at index and it's the only item in history, show logout dialog
+      if (currentTab === 'index' && tabHistory.length === 1) {
+        Alert.alert(
+          'Keluar Aplikasi',
+          'Apakah Anda yakin ingin keluar dari aplikasi?',
+          [
+            {
+              text: 'Batal',
+              onPress: () => null,
+              style: 'cancel',
+            },
+            {
+              text: 'Ya, Keluar',
+              onPress: async () => {
+                try {
+                  await logout();
+                  router.replace('/login');
+                } catch (error) {
+                  console.error('Logout error:', error);
+                  router.replace('/login');
+                }
+              },
+            },
+          ]
+        );
+        return true;
+      }
+
+      // If we have history to go back to
+      if (tabHistory.length > 1) {
+        // Remove current tab from history
+        tabHistory.pop();
+        
+        // Get previous tab
+        const previousTab = tabHistory[tabHistory.length - 1];
+        
+        // Update history
+        tabHistoryRef.current = tabHistory;
+        currentTabRef.current = previousTab;
+        
+        console.log('Going back to:', previousTab);
+        console.log('New history:', tabHistoryRef.current);
+        
+        // Navigate to previous tab
+        switch (previousTab) {
+          case 'index':
+            router.push('/(tabs)');
+            break;
+          case 'transactions':
+            router.push('/(tabs)/transactions');
+            break;
+          case 'add-transaction':
+            router.push('/(tabs)/add-transaction');
+            break;
+          case 'wallets':
+            router.push('/(tabs)/wallets');
+            break;
+          case 'profile':
+            router.push('/(tabs)/profile');
+            break;
+          default:
+            router.push('/(tabs)');
+            break;
+        }
+        return true;
+      }
+
+      // Default behavior for edge cases
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [router, logout]);
+
   return (
     <Tabs
       screenOptions={{
@@ -44,6 +174,11 @@ export default function TabsLayout() {
             </View>
           ),
         }}
+        listeners={{
+          tabPress: () => {
+            addToHistory('index');
+          },
+        }}
       />
 
       {/* Tab 2 */}
@@ -56,6 +191,11 @@ export default function TabsLayout() {
               <MaterialIcons name="receipt-long" size={focused ? 26 : 24} color={color} />
             </View>
           ),
+        }}
+        listeners={{
+          tabPress: () => {
+            addToHistory('transactions');
+          },
         }}
       />
 
@@ -79,12 +219,16 @@ export default function TabsLayout() {
             );
             return (
               <View style={styles.floatingButtonTouchWrapper}>
-                {/* Bisa diganti TouchableOpacity kalau ingin animasi ripple */}
                 <TouchableOpacity {...filteredProps} activeOpacity={0.8}>
                   {props.children}
                 </TouchableOpacity>
               </View>
             );
+          },
+        }}
+        listeners={{
+          tabPress: () => {
+            addToHistory('add-transaction');
           },
         }}
       />
@@ -100,6 +244,11 @@ export default function TabsLayout() {
             </View>
           ),
         }}
+        listeners={{
+          tabPress: () => {
+            addToHistory('wallets');
+          },
+        }}
       />
 
       {/* Tab 5 */}
@@ -113,12 +262,15 @@ export default function TabsLayout() {
             </View>
           ),
         }}
+        listeners={{
+          tabPress: () => {
+            addToHistory('profile');
+          },
+        }}
       />
     </Tabs>
   );
 }
-
-import { TouchableOpacity } from 'react-native'; // tambahkan ini di atas kalau belum
 
 const styles = StyleSheet.create({
   iconContainer: {

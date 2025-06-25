@@ -11,6 +11,7 @@ import {
   TextInput,
   Modal,
   FlatList,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -272,10 +273,17 @@ export default function TransactionsScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+        {/* StatusBar untuk loading state */}
+        <StatusBar
+          animated={true}
+          backgroundColor="#4A90E2"
+          barStyle="light-content"
+          translucent={false}
+        />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Memuat transaksi...</Text>
+          <ActivityIndicator size="large" color="#4A90E2" />
+          <Text style={styles.loadingText}>Memuat Transaksi...</Text>
         </View>
       </SafeAreaView>
     );
@@ -283,6 +291,12 @@ export default function TransactionsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+       <StatusBar
+        animated={true}
+        backgroundColor="#4A90E2"
+        barStyle="light-content"
+        translucent={false}
+      />
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.titleContainer}>

@@ -52,7 +52,18 @@ export default function RegisterScreen() {
     try {
       setIsLoading(true);
       await register(name, email, password, confirmPassword);
-      router.replace("/(tabs)");
+      
+      // Tampilkan pesan sukses dan arahkan ke login
+      Alert.alert(
+        "Registrasi Berhasil", 
+        "Akun Anda telah berhasil dibuat. Silakan login untuk melanjutkan.",
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace("/(auth)/login")
+          }
+        ]
+      );
     } catch (error: any) {
       Alert.alert("Registrasi Gagal", error.message);
     } finally {

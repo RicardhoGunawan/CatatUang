@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   TouchableOpacity,
+  StatusBar,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
@@ -34,7 +35,7 @@ export default function HomeScreen() {
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [totalBalance, setTotalBalance] = useState(0);
   const router = useRouter();
-  const { logout } = useAuth();
+  // const { logout } = useAuth();
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -57,31 +58,31 @@ export default function HomeScreen() {
     }
   };
 
-  const confirmLogout = () => {
-    Alert.alert(
-      "Konfirmasi Keluar",
-      "Apakah Anda yakin ingin keluar?",
-      [
-        { text: "Batal", style: "cancel" },
-        {
-          text: "Keluar",
-          style: "destructive",
-          onPress: () => performLogout(),
-        },
-      ],
-      { cancelable: true }
-    );
-  };
+  // const confirmLogout = () => {
+  //   Alert.alert(
+  //     "Konfirmasi Keluar",
+  //     "Apakah Anda yakin ingin keluar?",
+  //     [
+  //       { text: "Batal", style: "cancel" },
+  //       {
+  //         text: "Keluar",
+  //         style: "destructive",
+  //         onPress: () => performLogout(),
+  //       },
+  //     ],
+  //     { cancelable: true }
+  //   );
+  // };
 
-  const performLogout = async () => {
-    try {
-      await logout();
-      router.replace("/(auth)/login");
-    } catch (error) {
-      console.error("Logout failed:", error);
-      Alert.alert("Error", "Gagal keluar, silakan coba lagi");
-    }
-  };
+  // const performLogout = async () => {
+  //   try {
+  //     await logout();
+  //     router.replace("/(auth)/login");
+  //   } catch (error) {
+  //     console.error("Logout failed:", error);
+  //     Alert.alert("Error", "Gagal keluar, silakan coba lagi");
+  //   }
+  // };
 
   const loadSummary = async () => {
     try {
@@ -163,6 +164,13 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+        {/* StatusBar untuk loading state */}
+        <StatusBar
+          animated={true}
+          backgroundColor="#f0f0f0"
+          barStyle="dark-content"
+          translucent={false}
+        />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4A90E2" />
           <Text style={styles.loadingText}>Memuat data...</Text>
@@ -173,6 +181,14 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      {/* StatusBar dengan warna yang sesuai header */}
+      <StatusBar
+        animated={true}
+        backgroundColor="#4A90E2"
+        barStyle="light-content"
+        translucent={false}
+      />
+      
       {/* Compact Sticky Header */}
       <View style={styles.stickyHeader}>
         <View style={styles.headerGradient}>
@@ -193,7 +209,7 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            <View style={styles.headerRight}>
+            {/* <View style={styles.headerRight}>
               <TouchableOpacity
                 onPress={confirmLogout}
                 style={styles.logoutButton}
@@ -202,7 +218,7 @@ export default function HomeScreen() {
                 <MaterialIcons name="logout" size={18} color="#FF4757" />
                 <Text style={styles.logoutText}>Keluar</Text>
               </TouchableOpacity>
-            </View>
+            </View> */}
           </View>
         </View>
       </View>
@@ -514,30 +530,30 @@ const styles = StyleSheet.create({
   //   borderRadius: 1,
   // },
 
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 25,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 71, 87, 0.2)",
-    shadowColor: "rgba(255, 71, 87, 0.3)",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
-    minWidth: 80,
-    justifyContent: "center",
-  },
-  logoutText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#FF4757",
-    marginLeft: 6,
-    letterSpacing: 0.2,
-  },
+  // logoutButton: {
+  //   flexDirection: "row",
+  //   alignItems: "center",
+  //   paddingHorizontal: 16,
+  //   paddingVertical: 10,
+  //   borderRadius: 25,
+  //   backgroundColor: "rgba(255, 255, 255, 0.9)",
+  //   borderWidth: 1,
+  //   borderColor: "rgba(255, 71, 87, 0.2)",
+  //   shadowColor: "rgba(255, 71, 87, 0.3)",
+  //   shadowOffset: { width: 0, height: 3 },
+  //   shadowOpacity: 0.3,
+  //   shadowRadius: 6,
+  //   elevation: 4,
+  //   minWidth: 80,
+  //   justifyContent: "center",
+  // },
+  // logoutText: {
+  //   fontSize: 13,
+  //   fontWeight: "600",
+  //   color: "#FF4757",
+  //   marginLeft: 6,
+  //   letterSpacing: 0.2,
+  // },
   scrollView: {
     flex: 1,
   },

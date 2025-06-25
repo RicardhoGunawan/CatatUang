@@ -188,7 +188,9 @@ export default function AddTransactionModal({
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-            <MaterialIcons name="close" size={24} color="#007AFF" />
+            <Text style={{ fontSize: 16, color: "#333", fontWeight: "500" }}>
+              Tutup
+            </Text>         
           </TouchableOpacity>
           <Text style={styles.title}>Tambah Transaksi</Text>
           <TouchableOpacity 
