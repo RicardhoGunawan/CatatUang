@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   ScrollView,
   RefreshControl,
@@ -12,8 +13,11 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
-import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect, useRouter } from "expo-router";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuth } from "../../contexts/AuthContext";
 import {
@@ -25,6 +29,7 @@ import {
 } from "../../services/api";
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -38,9 +43,11 @@ export default function HomeScreen() {
   // const { logout } = useAuth();
   const navigation = useNavigation();
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   const loadData = async () => {
     try {
@@ -57,32 +64,6 @@ export default function HomeScreen() {
       setIsLoading(false);
     }
   };
-
-  // const confirmLogout = () => {
-  //   Alert.alert(
-  //     "Konfirmasi Keluar",
-  //     "Apakah Anda yakin ingin keluar?",
-  //     [
-  //       { text: "Batal", style: "cancel" },
-  //       {
-  //         text: "Keluar",
-  //         style: "destructive",
-  //         onPress: () => performLogout(),
-  //       },
-  //     ],
-  //     { cancelable: true }
-  //   );
-  // };
-
-  // const performLogout = async () => {
-  //   try {
-  //     await logout();
-  //     router.replace("/(auth)/login");
-  //   } catch (error) {
-  //     console.error("Logout failed:", error);
-  //     Alert.alert("Error", "Gagal keluar, silakan coba lagi");
-  //   }
-  // };
 
   const loadSummary = async () => {
     try {
@@ -163,7 +144,10 @@ export default function HomeScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <SafeAreaView
+        style={styles.container}
+        edges={["left", "right", "bottom"]}
+      >
         {/* StatusBar untuk loading state */}
         <StatusBar
           animated={true}
@@ -180,45 +164,30 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
-      {/* StatusBar dengan warna yang sesuai header */}
+    <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
+      {/* StatusBar - konsisten dengan header */}
       <StatusBar
         animated={true}
         backgroundColor="#4A90E2"
         barStyle="light-content"
         translucent={false}
       />
-      
-      {/* Compact Sticky Header */}
-      <View style={styles.stickyHeader}>
-        <View style={styles.headerGradient}>
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <View style={styles.brandContainer}>
-                <View style={styles.logoContainer}>
-                  <MaterialIcons
-                    name="account-balance-wallet"
-                    size={24}
-                    color="#FFD700"
-                  />
-                </View>
-                <View style={styles.appTitleContainer}>
-                  <Text style={styles.appTitle}>CatatUang</Text>
-                  <Text style={styles.appSubtitle}>Kelola Keuangan Anda</Text>
-                </View>
-              </View>
-            </View>
 
-            {/* <View style={styles.headerRight}>
-              <TouchableOpacity
-                onPress={confirmLogout}
-                style={styles.logoutButton}
-                activeOpacity={0.7}
-              >
-                <MaterialIcons name="logout" size={18} color="#FF4757" />
-                <Text style={styles.logoutText}>Keluar</Text>
-              </TouchableOpacity>
-            </View> */}
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
+        <View style={styles.headerContent}>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require("../../assets/images/wallet.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <View style={styles.titleContainer}>
+              <Text style={styles.headerTitle}>CatatUang</Text>
+              <Text style={styles.headerSubtitle}>
+                Kelola Uang Anda dengan Mudah
+              </Text>
+            </View>
           </View>
         </View>
       </View>
@@ -457,103 +426,74 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8FAFC",
   },
-  // Compact Header Styles
-  stickyHeader: {
-    backgroundColor: "#4A90E2",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.1)",
-  },
-  headerGradient: {
-    // Jika menggunakan gradient library, bisa ditambahkan di sini
-    backgroundColor: "linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)",
-  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    minHeight: 70,
+    paddingBottom: 20,
+    backgroundColor: "#4A90E2",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
+    // Hapus minHeight untuk mencegah konflik
   },
-  headerLeft: {
+  headerContent: {
     flex: 1,
-  },
-  brandContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  logoContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
     justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 215, 0, 0.3)",
   },
 
-   appTitleContainer: {
-    flex: 1,
+  logoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    // Tambahkan minHeight di sini untuk konsistensi
+    minHeight: 60,
   },
-  appTitle: {
-    fontSize: 24,
+
+  logo: {
+    width: 48,
+    height: 48,
+    marginRight: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+
+  titleContainer: {
+    flex: 1,
+    justifyContent: "center",
+  },
+
+  headerTitle: {
+    fontSize: 25,
     fontWeight: "800",
-    fontFamily: "inter",
     color: "#FFFFFF",
+    marginBottom: 2,
     letterSpacing: 0.5,
-    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
-    marginBottom: 2,
   },
-  appSubtitle: {
+
+  headerSubtitle: {
     fontSize: 12,
+    color: "rgba(255, 255, 255, 0.85)",
     fontWeight: "400",
-    color: "rgba(255, 255, 255, 0.8)",
     letterSpacing: 0.3,
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
+
   headerRight: {
     marginLeft: 16,
   },
-  // titleUnderline: {
-  //   width: 30,
-  //   height: 2,
-  //   backgroundColor: "#FFD700",
-  //   marginLeft: 8,
-  //   borderRadius: 1,
-  // },
-
-  // logoutButton: {
-  //   flexDirection: "row",
-  //   alignItems: "center",
-  //   paddingHorizontal: 16,
-  //   paddingVertical: 10,
-  //   borderRadius: 25,
-  //   backgroundColor: "rgba(255, 255, 255, 0.9)",
-  //   borderWidth: 1,
-  //   borderColor: "rgba(255, 71, 87, 0.2)",
-  //   shadowColor: "rgba(255, 71, 87, 0.3)",
-  //   shadowOffset: { width: 0, height: 3 },
-  //   shadowOpacity: 0.3,
-  //   shadowRadius: 6,
-  //   elevation: 4,
-  //   minWidth: 80,
-  //   justifyContent: "center",
-  // },
-  // logoutText: {
-  //   fontSize: 13,
-  //   fontWeight: "600",
-  //   color: "#FF4757",
-  //   marginLeft: 6,
-  //   letterSpacing: 0.2,
-  // },
   scrollView: {
     flex: 1,
   },

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   View,
   Text,
+  Image,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -68,23 +69,24 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <Ionicons name="wallet" size={48} color="#007AFF" />
-            </View>
+            <Image
+              source={require("../../assets/images/wallet.png")}
+              style={styles.logoContainer}
+              resizeMode="contain"
+            />
             <Text style={styles.title}>CatatUang</Text>
             <Text style={styles.subtitle}>Masuk ke akun Anda</Text>
           </View>
-
           <View style={styles.form}>
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email</Text>
               <View style={styles.inputWrapper}>
-                <Ionicons 
-                  name="mail-outline" 
-                  size={20} 
-                  color="#7f8c8d" 
-                  style={styles.inputIcon} 
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color="#7f8c8d"
+                  style={styles.inputIcon}
                 />
                 <TextInput
                   style={styles.inputWithIcon}
@@ -104,11 +106,11 @@ export default function LoginScreen() {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Password</Text>
               <View style={styles.inputWrapper}>
-                <Ionicons 
-                  name="lock-closed-outline" 
-                  size={20} 
-                  color="#7f8c8d" 
-                  style={styles.inputIcon} 
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color="#7f8c8d"
+                  style={styles.inputIcon}
                 />
                 <TextInput
                   style={styles.inputWithIcon}
@@ -194,7 +196,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: 15,
     backgroundColor: "#e3f2fd",
     justifyContent: "center",
     alignItems: "center",

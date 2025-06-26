@@ -13,7 +13,10 @@ import {
   FlatList,
   StatusBar,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { transactionsAPI, Transaction } from "../../services/api";
 import { useFocusEffect } from "@react-navigation/native";
@@ -21,6 +24,7 @@ import AddTransactionModal from "../../components/AddTransactionModal";
 import EditTransactionModal from "../../components/EditTransactionModal";
 
 export default function TransactionsScreen() {
+  const insets = useSafeAreaInsets();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -290,18 +294,21 @@ export default function TransactionsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-       <StatusBar
+    <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
+      {/* StatusBar - konsisten dengan header */}
+      <StatusBar
         animated={true}
         backgroundColor="#4A90E2"
         barStyle="light-content"
         translucent={false}
       />
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>Aktivitas</Text>
-          <Text style={styles.subtitle}>Kelola catatan finansial harian</Text>
+          <Text style={styles.headerTitle}>Aktivitas</Text>
+          <Text style={styles.headerSubtitle}>
+            Kelola catatan finansial harian
+          </Text>
         </View>
         <View style={styles.headerButtons}>
           <TouchableOpacity
@@ -624,35 +631,64 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    minHeight: 70,
+    paddingBottom: 20,
     backgroundColor: "#4A90E2",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 10,
+    shadowRadius: 12,
+    elevation: 12,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255, 255, 255, 0.1)",
+    // Hapus minHeight untuk mencegah konflik
   },
+  headerContent: {
+    flex: 1,
+    justifyContent: "center",
+  },
+
+  logoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    // Tambahkan minHeight di sini untuk konsistensi
+    minHeight: 60,
+  },
+
+  logo: {
+    width: 48,
+    height: 48,
+    marginRight: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+
   titleContainer: {
     flex: 1,
+    justifyContent: "center",
   },
-  title: {
-    fontSize: 28,
+
+  headerTitle: {
+    fontSize: 25,
     fontWeight: "800",
     color: "#FFFFFF",
     marginBottom: 2,
     letterSpacing: 0.5,
-    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
-  subtitle: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.8)",
+
+  headerSubtitle: {
+    fontSize: 12,
+    color: "rgba(255, 255, 255, 0.85)",
     fontWeight: "400",
     letterSpacing: 0.3,
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   headerButtons: {
     flexDirection: "row",

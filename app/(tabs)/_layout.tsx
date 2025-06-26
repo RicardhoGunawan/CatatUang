@@ -10,40 +10,19 @@ export default function TabsLayout() {
   const router = useRouter();
   const navigation = useNavigation();
   const { logout } = useAuth();
-  const tabHistoryRef = useRef<string[]>(['index']); // Start with index as first tab
-  const currentTabRef = useRef<string>('index');
+  const currentTabRef = useRef('index');
 
-  // Function to add tab to history
-  const addToHistory = (tabName: string) => {
-    const history = tabHistoryRef.current;
-    
-    // Don't add if it's the same as current tab
-    if (history[history.length - 1] === tabName) return;
-    
-    // Add new tab to history
-    history.push(tabName);
-    
-    // Keep only last 10 tabs to prevent memory issues
-    if (history.length > 10) {
-      tabHistoryRef.current = history.slice(-10);
-    }
-    
-    currentTabRef.current = tabName;
-    
-    console.log('Tab History:', tabHistoryRef.current); // Debug log
-  };
-
+  // Track current active tab
   useEffect(() => {
-    // Listener untuk track tab changes
     const unsubscribe = navigation.addListener('state', (e) => {
       const state = e.data.state;
-      if (state && state.routes && state.routes[state.index]) {
-        const currentRoute = state.routes[state.index];
-        if (currentRoute.state && currentRoute.state.routes && currentRoute.state.index !== undefined) {
-          const currentTab = currentRoute.state.routes[currentRoute.state.index].name;
-          
-          // Update current tab reference
-          currentTabRef.current = currentTab;
+      if (state?.routes?.[state.index]?.state?.routes) {
+        const currentRoute = state.routes[state.index].state;
+        if (currentRoute && currentRoute.routes && typeof currentRoute.index === 'number') {
+          const tabName = currentRoute.routes[currentRoute.index]?.name;
+          if (tabName) {
+            currentTabRef.current = tabName;
+          }
         }
       }
     });
@@ -51,23 +30,19 @@ export default function TabsLayout() {
     return unsubscribe;
   }, [navigation]);
 
+  // Handle hardware back button
   useEffect(() => {
     const backAction = () => {
       const currentTab = currentTabRef.current;
-      const tabHistory = [...tabHistoryRef.current]; // Create copy
       
-      console.log('Back pressed. Current tab:', currentTab);
-      console.log('Current history:', tabHistory);
-
-      // If we're at index and it's the only item in history, show logout dialog
-      if (currentTab === 'index' && tabHistory.length === 1) {
+      // If currently on index tab, show logout confirmation
+      if (currentTab === 'index') {
         Alert.alert(
           'Keluar Aplikasi',
           'Apakah Anda yakin ingin keluar dari aplikasi?',
           [
             {
               text: 'Batal',
-              onPress: () => null,
               style: 'cancel',
             },
             {
@@ -84,50 +59,12 @@ export default function TabsLayout() {
             },
           ]
         );
-        return true;
+        return true; // Prevent default back behavior
       }
-
-      // If we have history to go back to
-      if (tabHistory.length > 1) {
-        // Remove current tab from history
-        tabHistory.pop();
-        
-        // Get previous tab
-        const previousTab = tabHistory[tabHistory.length - 1];
-        
-        // Update history
-        tabHistoryRef.current = tabHistory;
-        currentTabRef.current = previousTab;
-        
-        console.log('Going back to:', previousTab);
-        console.log('New history:', tabHistoryRef.current);
-        
-        // Navigate to previous tab
-        switch (previousTab) {
-          case 'index':
-            router.push('/(tabs)');
-            break;
-          case 'transactions':
-            router.push('/(tabs)/transactions');
-            break;
-          case 'add-transaction':
-            router.push('/(tabs)/add-transaction');
-            break;
-          case 'wallets':
-            router.push('/(tabs)/wallets');
-            break;
-          case 'profile':
-            router.push('/(tabs)/profile');
-            break;
-          default:
-            router.push('/(tabs)');
-            break;
-        }
-        return true;
-      }
-
-      // Default behavior for edge cases
-      return false;
+      
+      // If on other tabs, go back to index tab
+      router.push('/(tabs)');
+      return true; // Prevent default back behavior
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
@@ -163,7 +100,7 @@ export default function TabsLayout() {
         },
       }}
     >
-      {/* Tab 1 */}
+      {/* Home Tab */}
       <Tabs.Screen
         name="index"
         options={{
@@ -174,14 +111,9 @@ export default function TabsLayout() {
             </View>
           ),
         }}
-        listeners={{
-          tabPress: () => {
-            addToHistory('index');
-          },
-        }}
       />
 
-      {/* Tab 2 */}
+      {/* Transactions Tab */}
       <Tabs.Screen
         name="transactions"
         options={{
@@ -192,14 +124,9 @@ export default function TabsLayout() {
             </View>
           ),
         }}
-        listeners={{
-          tabPress: () => {
-            addToHistory('transactions');
-          },
-        }}
       />
 
-      {/* Floating Action Tab */}
+      {/* Add Transaction - Floating Button */}
       <Tabs.Screen
         name="add-transaction"
         options={{
@@ -213,7 +140,6 @@ export default function TabsLayout() {
             </View>
           ),
           tabBarButton: (props) => {
-            // Filter out any props with value null (e.g., disabled: null)
             const filteredProps = Object.fromEntries(
               Object.entries(props).filter(([_, v]) => v !== null)
             );
@@ -226,14 +152,9 @@ export default function TabsLayout() {
             );
           },
         }}
-        listeners={{
-          tabPress: () => {
-            addToHistory('add-transaction');
-          },
-        }}
       />
 
-      {/* Tab 4 */}
+      {/* Wallets Tab */}
       <Tabs.Screen
         name="wallets"
         options={{
@@ -244,14 +165,9 @@ export default function TabsLayout() {
             </View>
           ),
         }}
-        listeners={{
-          tabPress: () => {
-            addToHistory('wallets');
-          },
-        }}
       />
 
-      {/* Tab 5 */}
+      {/* Profile Tab */}
       <Tabs.Screen
         name="profile"
         options={{
@@ -261,11 +177,6 @@ export default function TabsLayout() {
               <MaterialIcons name="person" size={focused ? 26 : 24} color={color} />
             </View>
           ),
-        }}
-        listeners={{
-          tabPress: () => {
-            addToHistory('profile');
-          },
         }}
       />
     </Tabs>

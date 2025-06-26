@@ -331,7 +331,7 @@ function WalletsScreenContent() {
     </TouchableOpacity>
   );
 
-   if (loading) {
+  if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
         {/* StatusBar untuk loading state */}
@@ -350,9 +350,8 @@ function WalletsScreenContent() {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      {/* StatusBar dengan warna yang sesuai header */}
+    <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
+      {/* StatusBar - konsisten dengan header */}
       <StatusBar
         animated={true}
         backgroundColor="#4A90E2"
@@ -361,7 +360,7 @@ function WalletsScreenContent() {
       />
 
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Dompet Saya</Text>
           <Text style={styles.headerSubtitle}>
@@ -581,7 +580,7 @@ function WalletsScreenContent() {
           />
         </SafeAreaView>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -617,36 +616,64 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingBottom: 16,
-    minHeight: 70,
+    paddingBottom: 20,
     backgroundColor: "#4A90E2",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 10,
+    shadowRadius: 12,
+    elevation: 12,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255, 255, 255, 0.1)",
+    // Hapus minHeight untuk mencegah konflik
   },
   headerContent: {
     flex: 1,
     justifyContent: "center",
   },
+
+  logoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    // Tambahkan minHeight di sini untuk konsistensi
+    minHeight: 60,
+  },
+
+  logo: {
+    width: 48,
+    height: 48,
+    marginRight: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+
+  titleContainer: {
+    flex: 1,
+    justifyContent: "center",
+  },
+
   headerTitle: {
-    fontSize: 28,
+    fontSize: 25,
     fontWeight: "800",
     color: "#FFFFFF",
     marginBottom: 2,
     letterSpacing: 0.5,
-    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
+
   headerSubtitle: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 12,
+    color: "rgba(255, 255, 255, 0.85)",
     fontWeight: "400",
     letterSpacing: 0.3,
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 
   // Stats Styles
@@ -715,13 +742,9 @@ const styles = StyleSheet.create({
 
   // New styles untuk layout perbaikan
   headerContentDompet: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  titleContainer: {
-    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
 
   addButton: {

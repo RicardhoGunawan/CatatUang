@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
-  SafeAreaView,
   Modal,
   TextInput,
   KeyboardAvoidingView,
@@ -19,7 +18,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { authAPI, User } from "../../services/api";
 import {
   categoriesAPI,
@@ -27,10 +26,15 @@ import {
   Category,
   WalletType,
 } from "../../services/api";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
 const Profile = () => {
+  const insets = useSafeAreaInsets();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -545,19 +549,7 @@ const Profile = () => {
       .substring(0, 2);
   };
 
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [1, 0.9],
-    extrapolate: "clamp",
-  });
-
-  const headerTranslate = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [0, -20],
-    extrapolate: "clamp",
-  });
-
-    if (loading) {
+  if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         {/* StatusBar untuk loading state */}
@@ -576,58 +568,23 @@ const Profile = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
+      {/* StatusBar - konsisten dengan header */}
       <StatusBar
         animated={true}
         backgroundColor="#4A90E2"
         barStyle="light-content"
         translucent={false}
-      />  
-      {/* Animated Header */}
-      <Animated.View
-        style={[
-          styles.headerContainer,
-          {
-            opacity: headerOpacity,
-            transform: [{ translateY: headerTranslate }],
-          },
-        ]}
-      >
+      />
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
         <View style={styles.headerContent}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {user?.name ? getInitials(user.name) : "U"}
-              </Text>
-            </View>
-            <View style={styles.statusIndicator} />
-          </View>
-
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user?.name || "User"}</Text>
-            <Text style={styles.userEmail}>{user?.email || "No email"}</Text>
-            <View style={styles.verificationBadge}>
-              <Ionicons
-                name={
-                  user?.email_verified_at ? "checkmark-circle" : "alert-circle"
-                }
-                size={14}
-                color={user?.email_verified_at ? "#4CAF50" : "#FF9800"}
-              />
-              <Text
-                style={[
-                  styles.verificationText,
-                  { color: user?.email_verified_at ? "#4CAF50" : "#FF9800" },
-                ]}
-              >
-                {user?.email_verified_at
-                  ? "Terverifikasi"
-                  : "Belum diverifikasi"}
-              </Text>
-            </View>
-          </View>
+          <Text style={styles.headerTitle}>Profile</Text>
+          <Text style={styles.headerSubtitle}>
+            Kelola Profile dan Data Anda
+          </Text>
         </View>
-      </Animated.View>
+      </View>
 
       <Animated.ScrollView
         style={styles.scrollView}
@@ -1569,81 +1526,73 @@ const styles = StyleSheet.create({
     color: "#666",
     fontWeight: "500",
   },
-  headerContainer: {
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     backgroundColor: "#4A90E2",
-    paddingTop: 20,
-    paddingBottom:20,
-    // borderBottomLeftRadius: 24,
-    // borderBottomRightRadius: 24,
-    shadowColor: "#4A90E2",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
     shadowRadius: 12,
-    elevation: 8,
+    elevation: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
+    // Hapus minHeight untuk mencegah konflik
   },
   headerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 24,
-    paddingTop: 10,
-  },
-  avatarContainer: {
-    position: "relative",
-    marginRight: 16,
-  },
-  avatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 3,
-    borderColor: "rgba(255, 255, 255, 0.3)",
-  },
-  avatarText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-  },
-  statusIndicator: {
-    position: "absolute",
-    bottom: 2,
-    right: 2,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#4CAF50",
-    borderWidth: 3,
-    borderColor: "#4A90E2",
-  },
-  userInfo: {
     flex: 1,
+    justifyContent: "center",
   },
-  userName: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 16,
-    color: "rgba(255, 255, 255, 0.8)",
-    marginBottom: 8,
-  },
-  verificationBadge: {
+
+  logoContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    alignSelf: "flex-start",
+    // Tambahkan minHeight di sini untuk konsistensi
+    minHeight: 60,
   },
-  verificationText: {
+
+  logo: {
+    width: 48,
+    height: 48,
+    marginRight: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+
+  titleContainer: {
+    flex: 1,
+    justifyContent: "center",
+  },
+
+  headerTitle: {
+    fontSize: 25,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    marginBottom: 2,
+    letterSpacing: 0.5,
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+
+  headerSubtitle: {
     fontSize: 12,
-    fontWeight: "600",
-    marginLeft: 4,
+    color: "rgba(255, 255, 255, 0.85)",
+    fontWeight: "400",
+    letterSpacing: 0.3,
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+
+  headerRight: {
+    marginLeft: 16,
   },
   scrollView: {
     flex: 1,

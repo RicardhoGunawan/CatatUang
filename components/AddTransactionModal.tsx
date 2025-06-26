@@ -8,12 +8,12 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
-  Alert,
   ActivityIndicator,
   Platform,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { MaterialIcons } from '@expo/vector-icons';
+import TransactionModal from '../components/TransactionModal';
 import { categoriesAPI, walletsAPI, transactionsAPI, Category, Wallet } from '../services/api';
 
 interface AddTransactionModalProps {
@@ -31,6 +31,13 @@ export default function AddTransactionModal({
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Transaction Modal state
+  const [transactionModalVisible, setTransactionModalVisible] = useState(false);
+  const [transactionModalType, setTransactionModalType] = useState<'loading' | 'success' | 'error'>('loading');
+  const [transactionModalTitle, setTransactionModalTitle] = useState('');
+  const [transactionModalMessage, setTransactionModalMessage] = useState('');
+  const [submitProgress, setSubmitProgress] = useState(0);
 
   // Form state
   const [amount, setAmount] = useState('');
@@ -68,10 +75,30 @@ export default function AddTransactionModal({
       }
     } catch (error) {
       console.error('Error loading data:', error);
-      Alert.alert('Error', 'Gagal memuat data');
+      showTransactionModal('error', 'Gagal Memuat Data', 'Terjadi kesalahan saat memuat data. Silakan coba lagi.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const showTransactionModal = (
+    type: 'loading' | 'success' | 'error',
+    title: string,
+    message: string,
+    progress?: number
+  ) => {
+    setTransactionModalType(type);
+    setTransactionModalTitle(title);
+    setTransactionModalMessage(message);
+    if (progress !== undefined) {
+      setSubmitProgress(progress);
+    }
+    setTransactionModalVisible(true);
+  };
+
+  const hideTransactionModal = () => {
+    setTransactionModalVisible(false);
+    setSubmitProgress(0);
   };
 
   const resetForm = () => {
@@ -85,30 +112,47 @@ export default function AddTransactionModal({
   };
 
   const handleClose = () => {
-    resetForm();
-    onClose();
+    if (!isSubmitting) {
+      resetForm();
+      hideTransactionModal();
+      onClose();
+    }
   };
 
   const validateForm = () => {
     if (!amount || parseFloat(amount) <= 0) {
-      Alert.alert('Error', 'Jumlah harus diisi dan lebih dari 0');
+      showTransactionModal('error', 'Data Tidak Valid', 'Jumlah harus diisi dan lebih dari 0');
       return false;
     }
     if (!selectedCategoryId) {
-      Alert.alert('Error', 'Pilih kategori');
+      showTransactionModal('error', 'Data Tidak Valid', 'Silakan pilih kategori terlebih dahulu');
       return false;
     }
     if (!selectedWalletId) {
-      Alert.alert('Error', 'Pilih dompet');
+      showTransactionModal('error', 'Data Tidak Valid', 'Silakan pilih dompet terlebih dahulu');
       return false;
     }
     return true;
+  };
+
+  const simulateProgress = () => {
+    const intervals = [20, 40, 60, 80, 100];
+    intervals.forEach((progress, index) => {
+      setTimeout(() => {
+        setSubmitProgress(progress);
+      }, (index + 1) * 200);
+    });
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
+    
+    // Show loading modal
+    showTransactionModal('loading', 'Menyimpan Transaksi', 'Sedang memproses transaksi Anda...');
+    simulateProgress();
+
     try {
       const transactionData = {
         wallet_id: selectedWalletId!,
@@ -122,18 +166,31 @@ export default function AddTransactionModal({
       const response = await transactionsAPI.create(transactionData);
       
       if (response.success) {
-        Alert.alert('Berhasil', 'Transaksi berhasil ditambahkan');
-        onTransactionAdded();
-        handleClose();
+        // Show success modal
+        showTransactionModal('success', 'Transaksi Berhasil!', 'Transaksi Anda telah berhasil disimpan');
       } else {
-        Alert.alert('Error', response.message || 'Gagal menambahkan transaksi');
+        // Show error modal
+        showTransactionModal('error', 'Transaksi Gagal', response.message || 'Gagal menambahkan transaksi. Silakan coba lagi.');
       }
     } catch (error: any) {
       console.error('Error creating transaction:', error);
-      const errorMessage = error.response?.data?.message || 'Gagal menambahkan transaksi';
-      Alert.alert('Error', errorMessage);
+      const errorMessage = error.response?.data?.message || 'Terjadi kesalahan jaringan. Silakan periksa koneksi Anda dan coba lagi.';
+      showTransactionModal('error', 'Transaksi Gagal', errorMessage);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleTransactionModalClose = () => {
+    if (transactionModalType === 'success') {
+      // If success, trigger callback and close main modal
+      onTransactionAdded();
+      resetForm();
+      hideTransactionModal();
+      onClose();
+    } else {
+      // For error, just hide the transaction modal
+      hideTransactionModal();
     }
   };
 
@@ -178,223 +235,250 @@ export default function AddTransactionModal({
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={handleClose}
-    >
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-            <Text style={{ fontSize: 16, color: "#333", fontWeight: "500" }}>
-              Tutup
-            </Text>         
-          </TouchableOpacity>
-          <Text style={styles.title}>Tambah Transaksi</Text>
-          <TouchableOpacity 
-            onPress={handleSubmit} 
-            style={styles.saveButton}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color="#007AFF" />
-            ) : (
-              <Text style={styles.saveButtonText}>Simpan</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
-            <Text style={styles.loadingText}>Memuat data...</Text>
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleClose}
+      >
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity 
+              onPress={handleClose} 
+              style={[styles.closeButton, isSubmitting && styles.disabledButton]}
+              disabled={isSubmitting}
+            >
+              <Text style={[
+                { fontSize: 16, color: "#333", fontWeight: "500" },
+                isSubmitting && styles.disabledText
+              ]}>
+                Tutup
+              </Text>         
+            </TouchableOpacity>
+            <Text style={styles.title}>Tambah Transaksi</Text>
+            <TouchableOpacity 
+              onPress={handleSubmit} 
+              style={[styles.saveButton, isSubmitting && styles.disabledButton]}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#007AFF" />
+              ) : (
+                <Text style={styles.saveButtonText}>Simpan</Text>
+              )}
+            </TouchableOpacity>
           </View>
-        ) : (
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Transaction Type */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Jenis Transaksi</Text>
-              <View style={styles.typeContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.typeButton,
-                    selectedType === 'expense' && styles.typeButtonActive,
-                    { backgroundColor: selectedType === 'expense' ? '#dc3545' : '#f0f0f0' }
-                  ]}
-                  onPress={() => {
-                    setSelectedType('expense');
-                    setSelectedCategoryId(null); // Reset category selection
-                  }}
-                >
-                  <MaterialIcons 
-                    name="trending-down" 
-                    size={20} 
-                    color={selectedType === 'expense' ? '#fff' : '#666'} 
-                  />
-                  <Text style={[
-                    styles.typeButtonText,
-                    selectedType === 'expense' && styles.typeButtonTextActive
-                  ]}>
-                    Pengeluaran
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.typeButton,
-                    selectedType === 'income' && styles.typeButtonActive,
-                    { backgroundColor: selectedType === 'income' ? '#28a745' : '#f0f0f0' }
-                  ]}
-                  onPress={() => {
-                    setSelectedType('income');
-                    setSelectedCategoryId(null); // Reset category selection
-                  }}
-                >
-                  <MaterialIcons 
-                    name="trending-up" 
-                    size={20} 
-                    color={selectedType === 'income' ? '#fff' : '#666'} 
-                  />
-                  <Text style={[
-                    styles.typeButtonText,
-                    selectedType === 'income' && styles.typeButtonTextActive
-                  ]}>
-                    Pemasukan
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
 
-            {/* Amount */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Jumlah</Text>
-              <View style={styles.amountContainer}>
-                <Text style={styles.currencySymbol}>Rp</Text>
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#007AFF" />
+              <Text style={styles.loadingText}>Memuat data...</Text>
+            </View>
+          ) : (
+            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+              {/* Transaction Type */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Jenis Transaksi</Text>
+                <View style={styles.typeContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.typeButton,
+                      selectedType === 'expense' && styles.typeButtonActive,
+                      { backgroundColor: selectedType === 'expense' ? '#dc3545' : '#f0f0f0' }
+                    ]}
+                    onPress={() => {
+                      setSelectedType('expense');
+                      setSelectedCategoryId(null); // Reset category selection
+                    }}
+                    disabled={isSubmitting}
+                  >
+                    <MaterialIcons 
+                      name="trending-down" 
+                      size={20} 
+                      color={selectedType === 'expense' ? '#fff' : '#666'} 
+                    />
+                    <Text style={[
+                      styles.typeButtonText,
+                      selectedType === 'expense' && styles.typeButtonTextActive
+                    ]}>
+                      Pengeluaran
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.typeButton,
+                      selectedType === 'income' && styles.typeButtonActive,
+                      { backgroundColor: selectedType === 'income' ? '#28a745' : '#f0f0f0' }
+                    ]}
+                    onPress={() => {
+                      setSelectedType('income');
+                      setSelectedCategoryId(null); // Reset category selection
+                    }}
+                    disabled={isSubmitting}
+                  >
+                    <MaterialIcons 
+                      name="trending-up" 
+                      size={20} 
+                      color={selectedType === 'income' ? '#fff' : '#666'} 
+                    />
+                    <Text style={[
+                      styles.typeButtonText,
+                      selectedType === 'income' && styles.typeButtonTextActive
+                    ]}>
+                      Pemasukan
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Amount */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Jumlah</Text>
+                <View style={styles.amountContainer}>
+                  <Text style={styles.currencySymbol}>Rp</Text>
+                  <TextInput
+                    style={styles.amountInput}
+                    placeholder="0"
+                    value={formatDisplayAmount(amount)}
+                    onChangeText={(text) => setAmount(formatCurrency(text.replace(/[,.]/g, '')))}
+                    keyboardType="numeric"
+                    editable={!isSubmitting}
+                  />
+                </View>
+              </View>
+
+              {/* Category */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Kategori</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.categoryContainer}>
+                    {getFilteredCategories().map((category) => (
+                      <TouchableOpacity
+                        key={category.id}
+                        style={[
+                          styles.categoryButton,
+                          selectedCategoryId === category.id && styles.categoryButtonActive
+                        ]}
+                        onPress={() => setSelectedCategoryId(category.id)}
+                        disabled={isSubmitting}
+                      >
+                        <Text style={[
+                          styles.categoryButtonText,
+                          selectedCategoryId === category.id && styles.categoryButtonTextActive
+                        ]}>
+                          {category.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+
+              {/* Wallet */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Dompet</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.walletContainer}>
+                    {wallets.map((wallet) => (
+                      <TouchableOpacity
+                        key={wallet.id}
+                        style={[
+                          styles.walletButton,
+                          selectedWalletId === wallet.id && styles.walletButtonActive
+                        ]}
+                        onPress={() => setSelectedWalletId(wallet.id)}
+                        disabled={isSubmitting}
+                      >
+                        <Text style={[
+                          styles.walletButtonText,
+                          selectedWalletId === wallet.id && styles.walletButtonTextActive
+                        ]}>
+                          {wallet.name}
+                        </Text>
+                        <Text style={[
+                          styles.walletBalance,
+                          selectedWalletId === wallet.id && styles.walletBalanceActive
+                        ]}>
+                          Rp {new Intl.NumberFormat('id-ID').format(wallet.balance)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+
+              {/* Description */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Deskripsi (Opsional)</Text>
                 <TextInput
-                  style={styles.amountInput}
-                  placeholder="0"
-                  value={formatDisplayAmount(amount)}
-                  onChangeText={(text) => setAmount(formatCurrency(text.replace(/[,.]/g, '')))}
-                  keyboardType="numeric"
+                  style={styles.descriptionInput}
+                  placeholder="Tambahkan catatan..."
+                  value={description}
+                  onChangeText={setDescription}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                  editable={!isSubmitting}
                 />
               </View>
-            </View>
 
-            {/* Category */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Kategori</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.categoryContainer}>
-                  {getFilteredCategories().map((category) => (
-                    <TouchableOpacity
-                      key={category.id}
-                      style={[
-                        styles.categoryButton,
-                        selectedCategoryId === category.id && styles.categoryButtonActive
-                      ]}
-                      onPress={() => setSelectedCategoryId(category.id)}
-                    >
-                      <Text style={[
-                        styles.categoryButtonText,
-                        selectedCategoryId === category.id && styles.categoryButtonTextActive
-                      ]}>
-                        {category.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-
-            {/* Wallet */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Dompet</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.walletContainer}>
-                  {wallets.map((wallet) => (
-                    <TouchableOpacity
-                      key={wallet.id}
-                      style={[
-                        styles.walletButton,
-                        selectedWalletId === wallet.id && styles.walletButtonActive
-                      ]}
-                      onPress={() => setSelectedWalletId(wallet.id)}
-                    >
-                      <Text style={[
-                        styles.walletButtonText,
-                        selectedWalletId === wallet.id && styles.walletButtonTextActive
-                      ]}>
-                        {wallet.name}
-                      </Text>
-                      <Text style={[
-                        styles.walletBalance,
-                        selectedWalletId === wallet.id && styles.walletBalanceActive
-                      ]}>
-                        Rp {new Intl.NumberFormat('id-ID').format(wallet.balance)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-
-            {/* Description */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Deskripsi (Opsional)</Text>
-              <TextInput
-                style={styles.descriptionInput}
-                placeholder="Tambahkan catatan..."
-                value={description}
-                onChangeText={setDescription}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </View>
-
-            {/* Date */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Tanggal</Text>
-              <TouchableOpacity 
-                style={styles.dateButton}
-                onPress={showDatePickerModal}
-              >
-                <MaterialIcons name="event" size={20} color="#666" />
-                <Text style={styles.dateButtonText}>
-                  {formatDate(transactionDate)}
-                </Text>
-                <MaterialIcons name="keyboard-arrow-down" size={20} color="#666" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Date Picker */}
-            {showDatePicker && (
-              <DateTimePicker
-                value={transactionDate}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={onDateChange}
-                maximumDate={new Date()}
-                locale="id-ID"
-              />
-            )}
-
-            {/* iOS Date Picker Done Button */}
-            {Platform.OS === 'ios' && showDatePicker && (
-              <View style={styles.iosDatePickerContainer}>
-                <TouchableOpacity
-                  style={styles.iosDatePickerDoneButton}
-                  onPress={() => setShowDatePicker(false)}
+              {/* Date */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Tanggal</Text>
+                <TouchableOpacity 
+                  style={styles.dateButton}
+                  onPress={showDatePickerModal}
+                  disabled={isSubmitting}
                 >
-                  <Text style={styles.iosDatePickerDoneText}>Selesai</Text>
+                  <MaterialIcons name="event" size={20} color="#666" />
+                  <Text style={styles.dateButtonText}>
+                    {formatDate(transactionDate)}
+                  </Text>
+                  <MaterialIcons name="keyboard-arrow-down" size={20} color="#666" />
                 </TouchableOpacity>
               </View>
-            )}
-          </ScrollView>
-        )}
-      </View>
-    </Modal>
+
+              {/* Date Picker */}
+              {showDatePicker && (
+                <DateTimePicker
+                  value={transactionDate}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={onDateChange}
+                  maximumDate={new Date()}
+                  locale="id-ID"
+                />
+              )}
+
+              {/* iOS Date Picker Done Button */}
+              {Platform.OS === 'ios' && showDatePicker && (
+                <View style={styles.iosDatePickerContainer}>
+                  <TouchableOpacity
+                    style={styles.iosDatePickerDoneButton}
+                    onPress={() => setShowDatePicker(false)}
+                  >
+                    <Text style={styles.iosDatePickerDoneText}>Selesai</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
+
+      {/* Transaction Status Modal */}
+      <TransactionModal
+        visible={transactionModalVisible}
+        type={transactionModalType}
+        title={transactionModalTitle}
+        message={transactionModalMessage}
+        onClose={transactionModalType !== 'loading' ? handleTransactionModalClose : undefined}
+        buttonText={transactionModalType === 'success' ? 'Selesai' : 'Coba Lagi'}
+        progress={transactionModalType === 'loading' ? submitProgress : undefined}
+      />
+    </>
   );
 }
 
@@ -415,6 +499,12 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 4,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  disabledText: {
+    color: '#999',
   },
   title: {
     fontSize: 18,

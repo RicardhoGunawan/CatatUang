@@ -95,7 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('Login failed');
       }
     } catch (error: any) {
-      console.error('Login error:', error);
+      // console.error('Login error:', error);
       
       // Handle different error types
       if (error.response?.status === 401) {
