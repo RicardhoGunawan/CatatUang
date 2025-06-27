@@ -219,7 +219,6 @@ function WalletsScreenContent() {
 
   const getTotalBalance = () => {
     return wallets.reduce((sum, wallet) => {
-      // Konversi balance ke number jika bertipe string, fallback ke 0 jika invalid
       const balance =
         typeof wallet.balance === "string"
           ? parseFloat(wallet.balance) || 0
@@ -231,6 +230,15 @@ function WalletsScreenContent() {
     }, 0);
   };
 
+  const getWalletIcon = (typeId: number | undefined) => {
+    if (!typeId) return "account-balance-wallet";
+    const type = walletTypes.find((t) => t.id === typeId);
+    if (type?.name.toLowerCase().includes("bank")) return "account-balance";
+    if (type?.name.toLowerCase().includes("cash")) return "payments";
+    if (type?.name.toLowerCase().includes("card")) return "credit-card";
+    return "account-balance-wallet";
+  };
+
   const renderWalletItem = ({
     item,
     index,
@@ -238,53 +246,67 @@ function WalletsScreenContent() {
     item: Wallet;
     index: number;
   }) => (
-    <View style={[styles.walletCard, { marginLeft: index % 2 === 0 ? 0 : 8 }]}>
-      <View style={styles.walletHeader}>
-        <View style={styles.walletIconContainer}>
-          <MaterialIcons
-            name="account-balance-wallet"
-            size={24}
-            color="#007AFF"
-          />
-        </View>
-        <View style={styles.walletActions}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.editButton]}
-            onPress={() => openEditModal(item)}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="edit" size={18} color="#007AFF" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.deleteButton]}
-            onPress={() => handleDelete(item)}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="delete" size={18} color="#FF3B30" />
-          </TouchableOpacity>
-        </View>
-      </View>
+    <View style={styles.walletItemContainer}>
+      <TouchableOpacity
+        style={styles.walletItem}
+        onPress={() => openEditModal(item)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.walletContent}>
+          <View style={styles.walletLeft}>
+            <View
+              style={[
+                styles.walletIconContainer,
+                { backgroundColor: item.balance >= 0 ? "#E8F5E8" : "#FFEBEE" },
+              ]}
+            >
+              <MaterialIcons
+                name={getWalletIcon(item.user_wallet_type_id)}
+                size={28}
+                color={item.balance >= 0 ? "#4CAF50" : "#F44336"}
+              />
+            </View>
+            <View style={styles.walletInfo}>
+              <Text style={styles.walletName} numberOfLines={1}>
+                {item.name}
+              </Text>
+              <Text style={styles.walletType} numberOfLines={1}>
+                {getWalletTypeName(item.user_wallet_type_id)}
+              </Text>
+            </View>
+          </View>
 
-      <View style={styles.walletContent}>
-        <Text style={styles.walletName} numberOfLines={1}>
-          {item.name}
-        </Text>
-        <Text style={styles.walletType} numberOfLines={1}>
-          {getWalletTypeName(item.user_wallet_type_id)}
-        </Text>
-
-        <View style={styles.balanceContainer}>
-          <Text style={styles.balanceLabel}>Saldo</Text>
-          <Text
-            style={[
-              styles.balanceAmount,
-              { color: item.balance >= 0 ? "#34C759" : "#FF3B30" },
-            ]}
-            numberOfLines={1}
-          >
-            {formatCurrency(item.balance)}
-          </Text>
+          <View style={styles.walletRight}>
+            <Text
+              style={[
+                styles.balanceAmount,
+                { color: item.balance >= 0 ? "#2E7D32" : "#D32F2F" },
+              ]}
+              numberOfLines={1}
+            >
+              {formatCurrency(item.balance)}
+            </Text>
+          </View>
         </View>
+      </TouchableOpacity>
+
+      <View style={styles.actionButtonsContainer}>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.editButton]}
+          onPress={() => openEditModal(item)}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons name="edit" size={20} color="#2196F3" />
+          <Text style={styles.editButtonText}>Edit</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.deleteButton]}
+          onPress={() => handleDelete(item)}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons name="delete" size={20} color="#F44336" />
+          <Text style={styles.deleteButtonText}>Hapus</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -298,86 +320,146 @@ function WalletsScreenContent() {
       <Text
         style={[
           styles.typeSelectorLabel,
-          { color: formData.user_wallet_type_id ? "#000" : "#8E8E93" },
+          { color: formData.user_wallet_type_id ? "#1A1A1A" : "#9E9E9E" },
         ]}
       >
         {formData.user_wallet_type_id
           ? getWalletTypeName(formData.user_wallet_type_id)
           : "Pilih Tipe Dompet"}
       </Text>
-      <MaterialIcons name="keyboard-arrow-down" size={24} color="#8E8E93" />
+      <MaterialIcons name="expand-more" size={24} color="#9E9E9E" />
     </TouchableOpacity>
   );
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Memuat dompet...</Text>
-      </View>
+      <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+        {/* StatusBar untuk loading state */}
+        <StatusBar
+          animated={true}
+          backgroundColor="#4A90E2"
+          barStyle="light-content"
+          translucent={false}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4A90E2" />
+          <Text style={styles.loadingText}>Memuat Dompet...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
+      {/* StatusBar - konsisten dengan header */}
+      <StatusBar
+        animated={true}
+        backgroundColor="#4A90E2"
+        barStyle="light-content"
+        translucent={false}
+      />
 
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <View>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
+        <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Dompet Saya</Text>
           <Text style={styles.headerSubtitle}>
-            {wallets.length} Dompet • Total: {formatCurrency(getTotalBalance())}
+            Kelola semua dompet dalam satu tempat
           </Text>
         </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={openCreateModal}
-          activeOpacity={0.8}
-        >
-          <MaterialIcons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
       </View>
 
-      {/* Wallet List */}
-      <FlatList
-        data={wallets}
-        renderItem={renderWalletItem}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={2}
-        contentContainerStyle={[
-          styles.listContainer,
-          { paddingBottom: insets.bottom + 20 },
-        ]}
-        columnWrapperStyle={styles.row}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconContainer}>
-              <MaterialIcons
-                name="account-balance-wallet"
-                size={80}
-                color="#E5E5EA"
-              />
+      {/* Quick Stats - Balance Only */}
+      {wallets.length > 0 && (
+        <View style={styles.statsContainer}>
+          <View style={styles.statsCard}>
+            <View style={styles.statItem}>
+              <View style={styles.statTextContainer}>
+                <Text style={styles.statLabel}>Total Saldo</Text>
+                <Text
+                  style={[
+                    styles.statValue,
+                    styles.balanceValue,
+                    { color: getTotalBalance() >= 0 ? "#4CAF50" : "#F44336" },
+                  ]}
+                >
+                  {formatCurrency(getTotalBalance())}
+                </Text>
+              </View>
             </View>
-            <Text style={styles.emptyTitle}>Belum ada dompet</Text>
-            <Text style={styles.emptySubtitle}>
-              Tambahkan dompet pertama Anda untuk mulai mengelola keuangan
-            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Wallet List */}
+      <View style={styles.listSection}>
+        <View style={styles.sectionHeader}>
+          <View style={styles.headerContentDompet}>
+            <View style={styles.titleContainer}>
+              <Text style={styles.sectionTitle}>Daftar Dompet</Text>
+              {wallets.length > 0 && (
+                <Text style={styles.sectionSubtitle}>
+                  {wallets.length} dompet tersedia
+                </Text>
+              )}
+            </View>
+
             <TouchableOpacity
-              style={styles.emptyButton}
+              style={styles.addButton}
               onPress={openCreateModal}
               activeOpacity={0.8}
             >
               <MaterialIcons name="add" size={20} color="#fff" />
-              <Text style={styles.emptyButtonText}>Tambah Dompet</Text>
             </TouchableOpacity>
           </View>
-        }
-      />
+        </View>
+
+        <FlatList
+          data={wallets}
+          renderItem={renderWalletItem}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={[
+            styles.listContainer,
+            { paddingBottom: insets.bottom + 100 },
+          ]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#2196F3"]}
+              tintColor="#2196F3"
+            />
+          }
+          showsVerticalScrollIndicator={false}
+          ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconContainer}>
+                <MaterialIcons
+                  name="account-balance-wallet"
+                  size={64}
+                  color="#E0E0E0"
+                />
+              </View>
+              <Text style={styles.emptyTitle}>Belum Ada Dompet</Text>
+              <Text style={styles.emptySubtitle}>
+                Tambahkan dompet pertama Anda untuk mulai{"\n"}mengelola
+                keuangan dengan lebih baik
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyButton}
+                onPress={openCreateModal}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons name="add" size={24} color="#fff" />
+                <Text style={styles.emptyButtonText}>
+                  Tambah Dompet Pertama
+                </Text>
+              </TouchableOpacity>
+            </View>
+          }
+        />
+      </View>
 
       {/* Form Modal */}
       <Modal
@@ -387,13 +469,21 @@ function WalletsScreenContent() {
       >
         <SafeAreaView style={styles.modalContainer} edges={["top", "bottom"]}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={closeModal} activeOpacity={0.7}>
-              <Text style={styles.cancelButton}>Batal</Text>
+            <TouchableOpacity
+              style={styles.modalHeaderButton}
+              onPress={closeModal}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.cancelButton}>Tutup</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>
-              {editingWallet ? "Edit Dompet" : "Tambah Dompet"}
+              {editingWallet ? "Edit Dompet" : "Tambah Dompet Baru"}
             </Text>
-            <TouchableOpacity onPress={handleSubmit} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.modalHeaderButton}
+              onPress={handleSubmit}
+              activeOpacity={0.7}
+            >
               <Text style={styles.saveButton}>Simpan</Text>
             </TouchableOpacity>
           </View>
@@ -407,8 +497,8 @@ function WalletsScreenContent() {
                 onChangeText={(text) =>
                   setFormData({ ...formData, name: text })
                 }
-                placeholder="Masukkan nama dompet"
-                placeholderTextColor="#C7C7CC"
+                placeholder="Contoh: Dompet Harian, Tabungan Bank"
+                placeholderTextColor="#9E9E9E"
                 autoCapitalize="words"
               />
             </View>
@@ -416,6 +506,9 @@ function WalletsScreenContent() {
             <View style={styles.formGroup}>
               <Text style={styles.label}>Tipe Dompet</Text>
               {renderTypeSelector()}
+              <Text style={styles.helperText}>
+                Pilih tipe untuk mengkategorikan dompet Anda
+              </Text>
             </View>
 
             <View style={styles.formGroup}>
@@ -429,9 +522,12 @@ function WalletsScreenContent() {
                   setFormData({ ...formData, balance: numericValue });
                 }}
                 placeholder="0"
-                placeholderTextColor="#C7C7CC"
+                placeholderTextColor="#9E9E9E"
                 keyboardType="numeric"
               />
+              <Text style={styles.helperText}>
+                Masukkan saldo awal yang ada di dompet ini
+              </Text>
             </View>
           </View>
         </SafeAreaView>
@@ -446,13 +542,14 @@ function WalletsScreenContent() {
         <SafeAreaView style={styles.modalContainer} edges={["top", "bottom"]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity
+              style={styles.modalHeaderButton}
               onPress={() => setShowTypeModal(false)}
               activeOpacity={0.7}
             >
               <Text style={styles.cancelButton}>Batal</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Pilih Tipe Dompet</Text>
-            <View style={{ width: 60 }} />
+            <View style={styles.modalHeaderButton} />
           </View>
 
           <FlatList
@@ -472,15 +569,18 @@ function WalletsScreenContent() {
                 <Text style={styles.typeItemText}>{item.name}</Text>
                 {((formData.user_wallet_type_id === null && item.id === 0) ||
                   formData.user_wallet_type_id === item.id) && (
-                  <MaterialIcons name="check" size={24} color="#007AFF" />
+                  <MaterialIcons name="check" size={24} color="#2196F3" />
                 )}
               </TouchableOpacity>
             )}
             keyExtractor={(item) => item.id.toString()}
+            ItemSeparatorComponent={() => (
+              <View style={styles.typeItemSeparator} />
+            )}
           />
         </SafeAreaView>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -506,171 +606,304 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#8E8E93",
+    color: "#757575",
     fontWeight: "500",
   },
+
+  // Header Styles
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-end",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingBottom: 20,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#4A90E2",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
+    // Hapus minHeight untuk mencegah konflik
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#1D1D1F",
-    marginBottom: 4,
-    marginTop: 10,
+  headerContent: {
+    flex: 1,
+    justifyContent: "center",
   },
-  headerSubtitle: {
-    fontSize: 14,
-    color: "#8E8E93",
-    fontWeight: "500",
+
+  logoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    // Tambahkan minHeight di sini untuk konsistensi
+    minHeight: 60,
   },
-  addButton: {
-    backgroundColor: "#007AFF",
+
+  logo: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#007AFF",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  listContainer: {
-    padding: 16,
-  },
-  row: {
-    justifyContent: "space-between",
-  },
-  walletCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    width: (SCREEN_WIDTH - 40) / 2,
+    marginRight: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+
+  titleContainer: {
+    flex: 1,
+    justifyContent: "center",
+  },
+
+  headerTitle: {
+    fontSize: 25,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    marginBottom: 2,
+    letterSpacing: 0.5,
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+
+  headerSubtitle: {
+    fontSize: 12,
+    color: "rgba(255, 255, 255, 0.85)",
+    fontWeight: "400",
+    letterSpacing: 0.3,
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+
+  // Stats Styles
+  statsContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+  },
+  statsCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
     elevation: 3,
   },
-  walletHeader: {
+  statItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statTextContainer: {
+    alignItems: "flex-start",
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#1A1A1A",
+    marginTop: 2,
+  },
+  balanceValue: {
+    fontSize: 24,
+  },
+  statLabel: {
+    fontSize: 14,
+    color: "#757575",
+    fontWeight: "500",
+    marginBottom: 4,
+  },
+
+  // List Section Styles
+  listSection: {
+    flex: 1,
+    paddingTop: 32,
+  },
+  sectionHeader: {
+    paddingHorizontal: 24,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#1A1A1A",
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: "#757575",
+  },
+  listContainer: {
+    paddingHorizontal: 24,
+  },
+
+  // New styles untuk layout perbaikan
+  headerContentDompet: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
   },
-  walletIconContainer: {
+
+  addButton: {
+    backgroundColor: "#2196F3",
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#F0F8FF",
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#2196F3",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+    marginLeft: 12,
   },
-  walletActions: {
-    flexDirection: "row",
-  },
-  actionButton: {
-    width: 32,
-    height: 32,
+
+  // Wallet Item Styles
+  walletItemContainer: {
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 4,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  editButton: {
-    backgroundColor: "#F0F8FF",
-  },
-  deleteButton: {
-    backgroundColor: "#FFF5F5",
+  walletItem: {
+    padding: 20,
   },
   walletContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  walletLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  walletIconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  walletInfo: {
     flex: 1,
   },
   walletName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
-    color: "#1D1D1F",
+    color: "#1A1A1A",
     marginBottom: 4,
   },
   walletType: {
-    fontSize: 12,
-    color: "#8E8E93",
-    marginBottom: 12,
+    fontSize: 14,
+    color: "#757575",
+    fontWeight: "500",
   },
-  balanceContainer: {
-    marginTop: 8,
-  },
-  balanceLabel: {
-    fontSize: 12,
-    color: "#8E8E93",
-    marginBottom: 4,
+  walletRight: {
+    alignItems: "flex-end",
   },
   balanceAmount: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "700",
   },
+
+  // Action Buttons Styles
+  actionButtonsContainer: {
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  editButton: {
+    backgroundColor: "#E3F2FD",
+  },
+  deleteButton: {
+    backgroundColor: "#FFEBEE",
+  },
+  editButtonText: {
+    color: "#2196F3",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  deleteButtonText: {
+    color: "#F44336",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  itemSeparator: {
+    height: 8,
+  },
+
+  // Empty State Styles
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 80,
-    paddingHorizontal: 40,
+    paddingHorizontal: 32,
   },
   emptyIconContainer: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: "#F5F5F5",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 32,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "600",
-    color: "#1D1D1F",
-    marginBottom: 8,
+    color: "#1A1A1A",
+    marginBottom: 12,
     textAlign: "center",
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: "#8E8E93",
+    fontSize: 15,
+    color: "#757575",
     textAlign: "center",
-    lineHeight: 20,
-    marginBottom: 32,
+    lineHeight: 22,
+    marginBottom: 40,
   },
   emptyButton: {
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
+    backgroundColor: "#2196F3",
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 16,
     flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#007AFF",
-    shadowOffset: { width: 0, height: 4 },
+    gap: 12,
+    shadowColor: "#2196F3",
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowRadius: 16,
+    elevation: 8,
   },
   emptyButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
-    marginLeft: 8,
   },
+
+  // Modal Styles
   modalContainer: {
     flex: 1,
     backgroundColor: "#F8F9FA",
@@ -679,72 +912,90 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
+    borderBottomColor: "#F0F0F0",
+  },
+  modalHeaderButton: {
+    minWidth: 60,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1D1D1F",
+    color: "#1A1A1A",
   },
   cancelButton: {
     fontSize: 16,
-    color: "#FF3B30",
+    color: "#333",
     fontWeight: "500",
   },
   saveButton: {
     fontSize: 16,
-    color: "#007AFF",
+    color: "#2196F3",
     fontWeight: "600",
   },
+
+  // Form Styles
   formContainer: {
-    padding: 20,
+    padding: 24,
   },
   formGroup: {
-    marginBottom: 24,
+    marginBottom: 28,
   },
   label: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1D1D1F",
-    marginBottom: 8,
+    color: "#1A1A1A",
+    marginBottom: 12,
   },
   input: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 18,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#E5E5EA",
-    color: "#1D1D1F",
+    borderColor: "#E0E0E0",
+    color: "#1A1A1A",
+  },
+  helperText: {
+    fontSize: 13,
+    color: "#757575",
+    marginTop: 8,
+    lineHeight: 18,
   },
   typeSelector: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 18,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E5E5EA",
+    borderColor: "#E0E0E0",
   },
   typeSelectorLabel: {
     fontSize: 16,
   },
+
+  // Type Modal Styles
   typeItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
     backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
   },
   typeItemText: {
     fontSize: 16,
-    color: "#1D1D1F",
+    color: "#1A1A1A",
+    fontWeight: "500",
+  },
+  typeItemSeparator: {
+    height: 1,
+    backgroundColor: "#F0F0F0",
+    marginHorizontal: 24,
   },
 });

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   View,
   Text,
+  Image,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -14,13 +15,15 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
-import { Ionicons } from "@expo/vector-icons"; // Menggunakan Ionicons dari Expo
+import { Ionicons } from "@expo/vector-icons";
+import SuccessModal from "../../components/SuccessModal"; // Import komponen modal
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // State untuk modal
 
   const { login } = useAuth();
   const router = useRouter();
@@ -39,7 +42,9 @@ export default function LoginScreen() {
     try {
       setIsLoading(true);
       await login(email, password);
-      router.replace("/(tabs)");
+      
+      // Tampilkan modal success
+      setShowSuccessModal(true);
     } catch (error: any) {
       Alert.alert("Login Gagal", error.message);
     } finally {
@@ -56,6 +61,11 @@ export default function LoginScreen() {
     router.push("/(auth)/register");
   };
 
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    router.replace("/(tabs)"); // Navigasi ke tabs setelah modal ditutup
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -68,23 +78,24 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <Ionicons name="wallet" size={48} color="#007AFF" />
-            </View>
+            <Image
+              source={require("../../assets/images/wallet.png")}
+              style={styles.logoContainer}
+              resizeMode="contain"
+            />
             <Text style={styles.title}>CatatUang</Text>
             <Text style={styles.subtitle}>Masuk ke akun Anda</Text>
           </View>
-
           <View style={styles.form}>
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email</Text>
               <View style={styles.inputWrapper}>
-                <Ionicons 
-                  name="mail-outline" 
-                  size={20} 
-                  color="#7f8c8d" 
-                  style={styles.inputIcon} 
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color="#7f8c8d"
+                  style={styles.inputIcon}
                 />
                 <TextInput
                   style={styles.inputWithIcon}
@@ -104,11 +115,11 @@ export default function LoginScreen() {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Password</Text>
               <View style={styles.inputWrapper}>
-                <Ionicons 
-                  name="lock-closed-outline" 
-                  size={20} 
-                  color="#7f8c8d" 
-                  style={styles.inputIcon} 
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color="#7f8c8d"
+                  style={styles.inputIcon}
                 />
                 <TextInput
                   style={styles.inputWithIcon}
@@ -169,6 +180,16 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        title="Login Berhasil!"
+        message="Selamat datang kembali! Anda akan diarahkan ke halaman utama."
+        onClose={handleSuccessModalClose}
+        autoClose={true}
+        autoCloseDelay={500} // 1 detik
+      />
     </SafeAreaView>
   );
 }
@@ -194,7 +215,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: 15,
     backgroundColor: "#e3f2fd",
     justifyContent: "center",
     alignItems: "center",

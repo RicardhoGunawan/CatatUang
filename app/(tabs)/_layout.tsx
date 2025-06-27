@@ -1,9 +1,76 @@
-import React from 'react';
-import { Tabs } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
+import { Tabs, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform, BackHandler, Alert } from 'react-native';
+import { TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function TabsLayout() {
+  const router = useRouter();
+  const navigation = useNavigation();
+  const { logout } = useAuth();
+  const currentTabRef = useRef('index');
+
+  // Track current active tab
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('state', (e) => {
+      const state = e.data.state;
+      if (state?.routes?.[state.index]?.state?.routes) {
+        const currentRoute = state.routes[state.index].state;
+        if (currentRoute && currentRoute.routes && typeof currentRoute.index === 'number') {
+          const tabName = currentRoute.routes[currentRoute.index]?.name;
+          if (tabName) {
+            currentTabRef.current = tabName;
+          }
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  // Handle hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      const currentTab = currentTabRef.current;
+      
+      // If currently on index tab, show logout confirmation
+      if (currentTab === 'index') {
+        Alert.alert(
+          'Keluar Aplikasi',
+          'Apakah Anda yakin ingin keluar dari aplikasi?',
+          [
+            {
+              text: 'Batal',
+              style: 'cancel',
+            },
+            {
+              text: 'Ya, Keluar',
+              onPress: async () => {
+                try {
+                  await logout();
+                  router.replace('/login');
+                } catch (error) {
+                  console.error('Logout error:', error);
+                  router.replace('/login');
+                }
+              },
+            },
+          ]
+        );
+        return true; // Prevent default back behavior
+      }
+      
+      // If on other tabs, go back to index tab
+      router.push('/(tabs)');
+      return true; // Prevent default back behavior
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [router, logout]);
+
   return (
     <Tabs
       screenOptions={{
@@ -33,7 +100,7 @@ export default function TabsLayout() {
         },
       }}
     >
-      {/* Tab 1 */}
+      {/* Home Tab */}
       <Tabs.Screen
         name="index"
         options={{
@@ -46,7 +113,7 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* Tab 2 */}
+      {/* Transactions Tab */}
       <Tabs.Screen
         name="transactions"
         options={{
@@ -59,7 +126,7 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* Floating Action Tab */}
+      {/* Add Transaction - Floating Button */}
       <Tabs.Screen
         name="add-transaction"
         options={{
@@ -73,13 +140,11 @@ export default function TabsLayout() {
             </View>
           ),
           tabBarButton: (props) => {
-            // Filter out any props with value null (e.g., disabled: null)
             const filteredProps = Object.fromEntries(
               Object.entries(props).filter(([_, v]) => v !== null)
             );
             return (
               <View style={styles.floatingButtonTouchWrapper}>
-                {/* Bisa diganti TouchableOpacity kalau ingin animasi ripple */}
                 <TouchableOpacity {...filteredProps} activeOpacity={0.8}>
                   {props.children}
                 </TouchableOpacity>
@@ -89,7 +154,7 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* Tab 4 */}
+      {/* Wallets Tab */}
       <Tabs.Screen
         name="wallets"
         options={{
@@ -102,7 +167,7 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* Tab 5 */}
+      {/* Profile Tab */}
       <Tabs.Screen
         name="profile"
         options={{
@@ -117,8 +182,6 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
-
-import { TouchableOpacity } from 'react-native'; // tambahkan ini di atas kalau belum
 
 const styles = StyleSheet.create({
   iconContainer: {

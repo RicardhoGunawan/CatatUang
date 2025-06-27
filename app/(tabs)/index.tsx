@@ -1,18 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   ScrollView,
   RefreshControl,
   Alert,
   ActivityIndicator,
   TouchableOpacity,
+  StatusBar,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
-import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect, useRouter } from "expo-router";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuth } from "../../contexts/AuthContext";
 import {
@@ -24,6 +29,7 @@ import {
 } from "../../services/api";
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -34,12 +40,14 @@ export default function HomeScreen() {
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [totalBalance, setTotalBalance] = useState(0);
   const router = useRouter();
-  const { logout } = useAuth();
+  // const { logout } = useAuth();
   const navigation = useNavigation();
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   const loadData = async () => {
     try {
@@ -54,32 +62,6 @@ export default function HomeScreen() {
       Alert.alert("Error", "Gagal memuat data");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const confirmLogout = () => {
-    Alert.alert(
-      "Konfirmasi Keluar",
-      "Apakah Anda yakin ingin keluar?",
-      [
-        { text: "Batal", style: "cancel" },
-        {
-          text: "Keluar",
-          style: "destructive",
-          onPress: () => performLogout(),
-        },
-      ],
-      { cancelable: true }
-    );
-  };
-
-  const performLogout = async () => {
-    try {
-      await logout();
-      router.replace("/(auth)/login");
-    } catch (error) {
-      console.error("Logout failed:", error);
-      Alert.alert("Error", "Gagal keluar, silakan coba lagi");
     }
   };
 
@@ -162,7 +144,17 @@ export default function HomeScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <SafeAreaView
+        style={styles.container}
+        edges={["left", "right", "bottom"]}
+      >
+        {/* StatusBar untuk loading state */}
+        <StatusBar
+          animated={true}
+          backgroundColor="#f0f0f0"
+          barStyle="dark-content"
+          translucent={false}
+        />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4A90E2" />
           <Text style={styles.loadingText}>Memuat data...</Text>
@@ -172,24 +164,31 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      {/* Compact Sticky Header */}
-      <View style={styles.stickyHeader}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <View style={styles.userAvatar}>
-              <Text style={styles.avatarText}>
-                {user?.name?.charAt(0).toUpperCase() || 'U'}
+    <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
+      {/* StatusBar - konsisten dengan header */}
+      <StatusBar
+        animated={true}
+        backgroundColor="#4A90E2"
+        barStyle="light-content"
+        translucent={false}
+      />
+
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
+        <View style={styles.headerContent}>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require("../../assets/images/wallet.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <View style={styles.titleContainer}>
+              <Text style={styles.headerTitle}>CatatUang</Text>
+              <Text style={styles.headerSubtitle}>
+                Kelola Uang Anda dengan Mudah
               </Text>
             </View>
-            <View style={styles.headerContent}>
-              <Text style={styles.greeting}>Halo, {user?.name}!</Text>
-              <Text style={styles.subtitle}>Kelola keuangan Anda</Text>
-            </View>
           </View>
-          <TouchableOpacity onPress={confirmLogout} style={styles.logoutButton}>
-            <MaterialIcons name="logout" size={20} color="#FF6B6B" />
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -211,7 +210,11 @@ export default function HomeScreen() {
               {formatCurrency(totalBalance)}
             </Text>
             <View style={styles.balanceIndicator}>
-              <MaterialIcons name="account-balance-wallet" size={16} color="#fff" />
+              <MaterialIcons
+                name="account-balance-wallet"
+                size={16}
+                color="#fff"
+              />
               <Text style={styles.balanceSubtext}>Semua Dompet</Text>
             </View>
           </View>
@@ -249,23 +252,38 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Transaksi Terbaru</Text>
-            <TouchableOpacity onPress={() => router.push("/transactions")} style={styles.seeAllButton}>
+            <TouchableOpacity
+              onPress={() => router.push("/transactions")}
+              style={styles.seeAllButton}
+            >
               <Text style={styles.seeAll}>Lihat Semua</Text>
-              <MaterialIcons name="arrow-forward-ios" size={12} color="#4A90E2" />
+              <MaterialIcons
+                name="arrow-forward-ios"
+                size={12}
+                color="#4A90E2"
+              />
             </TouchableOpacity>
           </View>
 
           {recentTransactions.length > 0 ? (
             <View style={styles.transactionList}>
               {recentTransactions.map((transaction, index) => (
-                <View key={transaction.id} style={[
-                  styles.transactionItem,
-                  index === recentTransactions.length - 1 && styles.lastTransactionItem
-                ]}>
-                  <View style={[
-                    styles.transactionIcon,
-                    transaction.type === "income" ? styles.incomeIcon : styles.expenseIcon
-                  ]}>
+                <View
+                  key={transaction.id}
+                  style={[
+                    styles.transactionItem,
+                    index === recentTransactions.length - 1 &&
+                      styles.lastTransactionItem,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.transactionIcon,
+                      transaction.type === "income"
+                        ? styles.incomeIcon
+                        : styles.expenseIcon,
+                    ]}
+                  >
                     <MaterialIcons
                       name={
                         transaction.type === "income"
@@ -282,7 +300,10 @@ export default function HomeScreen() {
                     <Text style={styles.transactionCategory}>
                       {transaction.category?.name || "Tanpa Kategori"}
                     </Text>
-                    <Text style={styles.transactionDescription} numberOfLines={1}>
+                    <Text
+                      style={styles.transactionDescription}
+                      numberOfLines={1}
+                    >
                       {transaction.description || "Tidak ada deskripsi"}
                     </Text>
                     <Text style={styles.transactionDate}>
@@ -295,7 +316,9 @@ export default function HomeScreen() {
                         styles.transactionAmount,
                         {
                           color:
-                            transaction.type === "income" ? "#27AE60" : "#E74C3C",
+                            transaction.type === "income"
+                              ? "#27AE60"
+                              : "#E74C3C",
                         },
                       ]}
                     >
@@ -312,7 +335,9 @@ export default function HomeScreen() {
                 <MaterialIcons name="receipt-long" size={40} color="#BDC3C7" />
               </View>
               <Text style={styles.emptyText}>Belum ada transaksi</Text>
-              <Text style={styles.emptySubtext}>Mulai catat transaksi Anda</Text>
+              <Text style={styles.emptySubtext}>
+                Mulai catat transaksi Anda
+              </Text>
             </View>
           )}
         </View>
@@ -321,19 +346,30 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Dompet Saya</Text>
-            <TouchableOpacity onPress={() => router.push("/wallets")} style={styles.seeAllButton}>
+            <TouchableOpacity
+              onPress={() => router.push("/wallets")}
+              style={styles.seeAllButton}
+            >
               <Text style={styles.seeAll}>Kelola</Text>
-              <MaterialIcons name="arrow-forward-ios" size={12} color="#4A90E2" />
+              <MaterialIcons
+                name="arrow-forward-ios"
+                size={12}
+                color="#4A90E2"
+              />
             </TouchableOpacity>
           </View>
 
           {wallets.length > 0 ? (
             <View style={styles.walletList}>
               {wallets.slice(0, 3).map((wallet, index) => (
-                <View key={wallet.id} style={[
-                  styles.walletItem,
-                  index === Math.min(wallets.length - 1, 2) && styles.lastWalletItem
-                ]}>
+                <View
+                  key={wallet.id}
+                  style={[
+                    styles.walletItem,
+                    index === Math.min(wallets.length - 1, 2) &&
+                      styles.lastWalletItem,
+                  ]}
+                >
                   <View style={styles.walletIcon}>
                     <MaterialIcons
                       name="account-balance-wallet"
@@ -371,7 +407,9 @@ export default function HomeScreen() {
                 />
               </View>
               <Text style={styles.emptyText}>Belum ada dompet</Text>
-              <Text style={styles.emptySubtext}>Tambahkan dompet pertama Anda</Text>
+              <Text style={styles.emptySubtext}>
+                Tambahkan dompet pertama Anda
+              </Text>
             </View>
           )}
         </View>
@@ -388,53 +426,73 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8FAFC",
   },
-  // Compact Header Styles
-  stickyHeader: {
-    backgroundColor: "#4A90E2",
-    // borderBottomLeftRadius: 24,
-    // borderBottomRightRadius: 24,
-    shadowColor: "#4A90E2",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  userAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    borderColor: "rgba(255, 255, 255, 0.3)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  avatarText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: "#4A90E2",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
+    // Hapus minHeight untuk mencegah konflik
   },
   headerContent: {
     flex: 1,
+    justifyContent: "center",
   },
-  logoutButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: "#FEF2F2",
-    borderWidth: 1,
-    borderColor: "#FECACA",
+
+  logoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    // Tambahkan minHeight di sini untuk konsistensi
+    minHeight: 60,
+  },
+
+  logo: {
+    width: 48,
+    height: 48,
+    marginRight: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+
+  titleContainer: {
+    flex: 1,
+    justifyContent: "center",
+  },
+
+  headerTitle: {
+    fontSize: 25,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    marginBottom: 2,
+    letterSpacing: 0.5,
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+
+  headerSubtitle: {
+    fontSize: 12,
+    color: "rgba(255, 255, 255, 0.85)",
+    fontWeight: "400",
+    letterSpacing: 0.3,
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+
+  headerRight: {
+    marginLeft: 16,
   },
   scrollView: {
     flex: 1,
@@ -451,16 +509,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: "#64748B",
-  },
-  greeting: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  subtitle: {
-    fontSize: 13,
-    color: "rgba(255, 255, 255, 0.8)",
-    marginTop: 2,
   },
   // Enhanced Balance Card
   balanceCard: {

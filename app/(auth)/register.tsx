@@ -14,7 +14,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
-import { Ionicons } from "@expo/vector-icons"; // Menggunakan Ionicons dari Expo
+import { Ionicons } from "@expo/vector-icons";
+import SuccessModal from "../../components/SuccessModal"; // Import komponen modal
 
 export default function RegisterScreen() {
   const [name, setName] = useState("");
@@ -24,6 +25,7 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // State untuk modal
 
   const { register } = useAuth();
   const router = useRouter();
@@ -52,7 +54,9 @@ export default function RegisterScreen() {
     try {
       setIsLoading(true);
       await register(name, email, password, confirmPassword);
-      router.replace("/(tabs)");
+      
+      // Tampilkan modal success
+      setShowSuccessModal(true);
     } catch (error: any) {
       Alert.alert("Registrasi Gagal", error.message);
     } finally {
@@ -69,6 +73,10 @@ export default function RegisterScreen() {
     router.push("/(auth)/login");
   };
 
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    router.replace("/(auth)/login"); // Navigasi ke login setelah modal ditutup
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -242,6 +250,16 @@ export default function RegisterScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        title="Registrasi Berhasil!"
+        message="Akun Anda telah berhasil dibuat. Silakan login untuk melanjutkan menggunakan aplikasi."
+        buttonText="Login Sekarang"
+        onClose={handleSuccessModalClose}
+        onButtonPress={handleSuccessModalClose}
+      />
     </SafeAreaView>
   );
 }
