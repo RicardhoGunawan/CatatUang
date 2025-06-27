@@ -1,20 +1,20 @@
 // components/AddTransactionModal.tsx
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  ActivityIndicator,
-  Platform,
-} from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { MaterialIcons } from '@expo/vector-icons';
-import TransactionModal from '../components/TransactionModal';
-import { categoriesAPI, walletsAPI, transactionsAPI, Category, Wallet } from '../services/api';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { categoriesAPI, Category, transactionsAPI, Wallet, walletsAPI } from '../services/api';
+import TransactionModal from './ModalSuccessAddTransaction';
 
 interface AddTransactionModalProps {
   visible: boolean;

@@ -15,13 +15,15 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
-import { Ionicons } from "@expo/vector-icons"; // Menggunakan Ionicons dari Expo
+import { Ionicons } from "@expo/vector-icons";
+import SuccessModal from "../../components/SuccessModal"; // Import komponen modal
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // State untuk modal
 
   const { login } = useAuth();
   const router = useRouter();
@@ -40,7 +42,9 @@ export default function LoginScreen() {
     try {
       setIsLoading(true);
       await login(email, password);
-      router.replace("/(tabs)");
+      
+      // Tampilkan modal success
+      setShowSuccessModal(true);
     } catch (error: any) {
       Alert.alert("Login Gagal", error.message);
     } finally {
@@ -55,6 +59,11 @@ export default function LoginScreen() {
 
   const navigateToRegister = () => {
     router.push("/(auth)/register");
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    router.replace("/(tabs)"); // Navigasi ke tabs setelah modal ditutup
   };
 
   return (
@@ -171,6 +180,16 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        title="Login Berhasil!"
+        message="Selamat datang kembali! Anda akan diarahkan ke halaman utama."
+        onClose={handleSuccessModalClose}
+        autoClose={true}
+        autoCloseDelay={500} // 1 detik
+      />
     </SafeAreaView>
   );
 }

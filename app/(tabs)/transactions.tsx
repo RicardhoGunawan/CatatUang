@@ -463,12 +463,7 @@ export default function TransactionsScreen() {
                         {transaction.description || "Tidak ada deskripsi"}
                       </Text>
                       <Text style={styles.transactionDate}>
-                        {new Date(
-                          transaction.transaction_date
-                        ).toLocaleTimeString("id-ID", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}{" "}
+                        {formatDate(transaction.transaction_date)}{" "}
                         • {transaction.wallet?.name || "Dompet"}
                       </Text>
                     </View>

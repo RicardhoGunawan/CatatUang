@@ -59,7 +59,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
       const spinAnimation = Animated.loop(
         Animated.timing(spinValue, {
           toValue: 1,
-          duration: 1000,
+          duration: 100,
           easing: Easing.linear,
           useNativeDriver: true,
         })
@@ -78,7 +78,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
       // Progress animation
       Animated.timing(progressValue, {
         toValue: progress,
-        duration: 300,
+        duration: 100,
         useNativeDriver: false,
       }).start();
     }
