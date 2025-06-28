@@ -16,7 +16,8 @@
         "foregroundImage": "./assets/images/wallet.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.ricad16.CatatUang"
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +38,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e7cbfad0-911c-41c1-964d-101f74349b9b"
+      }
+    },
+    "owner": "ricad16"
   }
 }
