@@ -466,6 +466,8 @@ function WalletsScreenContent() {
         visible={modalVisible}
         animationType="slide"
         presentationStyle="pageSheet"
+        onRequestClose={() => setModalVisible(false)} // For iOS swipe down
+
       >
         <SafeAreaView style={styles.modalContainer} edges={["top", "bottom"]}>
           <View style={styles.modalHeader}>

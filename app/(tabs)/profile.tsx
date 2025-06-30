@@ -701,7 +701,7 @@ const Profile = () => {
           {/* App Info */}
           <View style={styles.appInfo}>
             <Text style={styles.appVersion}>CatatUang v1.0.0</Text>
-            <Text style={styles.appCopyright}>© 2024 CodingSalatiga</Text>
+            <Text style={styles.appCopyright}>© 2025 CodingSalatiga</Text>
           </View>
         </View>
       </Animated.ScrollView>
@@ -711,6 +711,8 @@ const Profile = () => {
         visible={showEditModal}
         animationType="slide"
         presentationStyle="pageSheet"
+        onRequestClose={() => setShowEditModal(false)} // Tambahkan ini
+
       >
         <SafeAreaView style={styles.modalContainer}>
           <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -803,6 +805,8 @@ const Profile = () => {
                       setEditForm((prev) => ({ ...prev, password: text }))
                     }
                     placeholder="Enter new password"
+                    placeholderTextColor="#777"
+
                     secureTextEntry
                     autoCapitalize="none"
                     returnKeyType="next"
@@ -821,6 +825,7 @@ const Profile = () => {
                       }))
                     }
                     placeholder="Confirm new password"
+                    placeholderTextColor="#777"
                     secureTextEntry
                     autoCapitalize="none"
                     returnKeyType="done"
@@ -836,6 +841,7 @@ const Profile = () => {
         visible={showCategoryModal}
         animationType="slide"
         presentationStyle="pageSheet"
+        onRequestClose={() => setShowCategoryModal(false)} // Tambahkan ini
       >
         <SafeAreaView style={styles.modalContainer}>
           <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -1103,6 +1109,7 @@ const Profile = () => {
         visible={showCategoryForm}
         animationType="slide"
         presentationStyle="pageSheet"
+        onRequestClose={() => setShowCategoryForm(false)} // Tambahkan ini
       >
         <SafeAreaView style={styles.modalContainer}>
           <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -1158,6 +1165,7 @@ const Profile = () => {
                       setCategoryForm((prev) => ({ ...prev, name: text }))
                     }
                     placeholder="Masukkan nama kategori"
+                    placeholderTextColor="#777"
                     autoCapitalize="words"
                     returnKeyType="next"
                   />
@@ -1298,6 +1306,8 @@ const Profile = () => {
         visible={showWalletTypeForm}
         animationType="slide"
         presentationStyle="pageSheet"
+        onRequestClose={() => setShowWalletTypeForm(false)} // Tambahkan ini
+
       >
         <SafeAreaView style={styles.modalContainer}>
           <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -1355,6 +1365,7 @@ const Profile = () => {
                       setWalletTypeForm((prev) => ({ ...prev, name: text }))
                     }
                     placeholder="Masukkan nama tipe dompet"
+                    placeholderTextColor="#777"
                     autoCapitalize="words"
                     returnKeyType="next"
                   />
@@ -1369,6 +1380,7 @@ const Profile = () => {
                       setWalletTypeForm((prev) => ({ ...prev, icon: text }))
                     }
                     placeholder="Masukkan nama icon (contoh: wallet, bank, cash)"
+                    placeholderTextColor="#777"
                     autoCapitalize="none"
                     returnKeyType="done"
                   />
@@ -1408,6 +1420,7 @@ const Profile = () => {
         visible={showWalletTypeModal}
         animationType="slide"
         presentationStyle="pageSheet"
+        onRequestClose={() => setShowWalletTypeModal(false)} // Tambahkan ini
       >
         <SafeAreaView style={styles.modalContainer}>
           <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Tabs, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { View, StyleSheet, Platform, BackHandler, Alert } from 'react-native';
+import { View, StyleSheet, Platform, BackHandler, ToastAndroid } from 'react-native';
 import { TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
@@ -11,6 +11,7 @@ export default function TabsLayout() {
   const navigation = useNavigation();
   const { logout } = useAuth();
   const currentTabRef = useRef('index');
+  const backPressCountRef = useRef(0);
 
   // Track current active tab
   useEffect(() => {
@@ -35,31 +36,27 @@ export default function TabsLayout() {
     const backAction = () => {
       const currentTab = currentTabRef.current;
       
-      // If currently on index tab, show logout confirmation
+      // If currently on index tab, implement double back to exit
       if (currentTab === 'index') {
-        Alert.alert(
-          'Keluar Aplikasi',
-          'Apakah Anda yakin ingin keluar dari aplikasi?',
-          [
-            {
-              text: 'Batal',
-              style: 'cancel',
-            },
-            {
-              text: 'Ya, Keluar',
-              onPress: async () => {
-                try {
-                  await logout();
-                  router.replace('/login');
-                } catch (error) {
-                  console.error('Logout error:', error);
-                  router.replace('/login');
-                }
-              },
-            },
-          ]
-        );
-        return true; // Prevent default back behavior
+        if (backPressCountRef.current === 0) {
+          backPressCountRef.current = 1;
+          
+          // Show toast message
+          if (Platform.OS === 'android') {
+            ToastAndroid.show('Tekan sekali lagi untuk keluar aplikasi', ToastAndroid.SHORT);
+          }
+          
+          // Reset counter after 2 seconds
+          setTimeout(() => {
+            backPressCountRef.current = 0;
+          }, 2000);
+          
+          return true; // Prevent default back behavior
+        } else {
+          // Second back press - exit app
+          BackHandler.exitApp();
+          return false;
+        }
       }
       
       // If on other tabs, go back to index tab
@@ -69,7 +66,7 @@ export default function TabsLayout() {
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
     return () => backHandler.remove();
-  }, [router, logout]);
+  }, [router]);
 
   return (
     <Tabs

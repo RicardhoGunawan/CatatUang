@@ -88,7 +88,6 @@ export default function TransactionsScreen() {
       const endDate = new Date(
         selectedDate.getFullYear(),
         selectedDate.getMonth() + 1,
-        0
       );
 
       const params: any = {
