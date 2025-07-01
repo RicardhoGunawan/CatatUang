@@ -11,6 +11,7 @@ import {
   SafeAreaView,
   StatusBar,
   FlatList,
+  BackHandler,
 } from "react-native";
 import Modal from "react-native-modal";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
@@ -114,6 +115,22 @@ export const StatisticsModal: React.FC<StatisticsModalProps> = ({
       loadData();
     }
   }, [isVisible, activeTab, period, selectedComparisonMonth]);
+
+  // useEffect terpisah untuk handle back button
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (isVisible) {
+          onClose();
+          return true; // Mencegah default behavior
+        }
+        return false;
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [isVisible, onClose]); // Dependensi yang diperlukan
 
   const generateAvailableMonths = () => {
     const months: Date[] = [];
@@ -541,8 +558,10 @@ export const StatisticsModal: React.FC<StatisticsModalProps> = ({
       style={styles.fullScreenModal}
       animationIn="slideInUp"
       animationOut="slideOutDown"
-      backdropOpacity={1}
+      backdropOpacity={0.5} // Kurangi opacity untuk feedback visual yang lebih baik
       backdropColor="#000"
+      onBackButtonPress={onClose} // Tambahkan ini untuk Android back button
+      onBackdropPress={onClose} // Untuk tap di area luar modal
     >
       <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />

@@ -42,7 +42,7 @@ const Profile = () => {
   const router = useRouter();
   const scrollY = new Animated.Value(0);
 
-  const [debugInfo, setDebugInfo] = useState<any>(null);
+  // const [debugInfo, setDebugInfo] = useState<any>(null);
   const [showStatisticsModal, setShowStatisticsModal] = useState(false);
 
   const handleStatisticsPress = () => {
