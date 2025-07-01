@@ -709,15 +709,15 @@ export const StatisticsModal: React.FC<StatisticsModalProps> = ({
                       <PieChart
                         data={comparisonPieData}
                         width={screenWidth - 40}
-                        height={220}
+                        height={250}
                         chartConfig={{
                           ...chartConfig,
                           color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
                         }}
                         accessor="amount"
                         backgroundColor="transparent"
-                        paddingLeft="15"
-                        center={[0, -20]}
+                        paddingLeft="65"
+                        center={[10, 10]}
                         absolute
                         hasLegend={false}
                       />
@@ -905,14 +905,14 @@ export const StatisticsModal: React.FC<StatisticsModalProps> = ({
                       <PieChart
                         data={pieChartData}
                         width={screenWidth - 40}
-                        height={220}
+                        height={250}
                         chartConfig={chartConfig}
                         accessor="amount"
                         backgroundColor="transparent"
-                        paddingLeft="15"
+                        paddingLeft="65"
                         center={[10, 10]}
                         absolute
-                        hasLegend={true}
+                        hasLegend={false}
                       />
                     </View>
 

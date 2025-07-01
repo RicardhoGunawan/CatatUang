@@ -498,6 +498,7 @@ export default function TransactionsScreen() {
         <TextInput
           style={styles.searchInput}
           placeholder="Cari transaksi..."
+          placeholderTextColor="#777"
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
