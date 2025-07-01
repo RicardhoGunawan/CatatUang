@@ -26,6 +26,7 @@ import {
   Category,
   WalletType,
 } from "../../services/api";
+import {StatisticsModal} from '../../components/StatisticsModal';
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -42,6 +43,12 @@ const Profile = () => {
   const scrollY = new Animated.Value(0);
 
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [showStatisticsModal, setShowStatisticsModal] = useState(false);
+
+  const handleStatisticsPress = () => {
+    setShowStatisticsModal(true);
+  };
+
 
   // Add missing state hooks
   const [editForm, setEditForm] = useState({
@@ -644,6 +651,27 @@ const Profile = () => {
               </TouchableOpacity>
             </View>
           </View>
+          {/* Tambahkan menu item untuk Statistics setelah Account Management */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Analisis</Text>
+
+        <View style={styles.menuContainer}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleStatisticsPress}
+          >
+            <View style={styles.menuItemLeft}>
+              <View
+                style={[styles.menuIcon, { backgroundColor: "#E8F5E8" }]}
+              >
+                <Ionicons name="analytics-outline" size={20} color="#4CAF50" />
+              </View>
+              <Text style={styles.menuItemText}>Statistik Keuangan</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#C1C1C1" />
+          </TouchableOpacity>
+        </View>
+      </View>
           {/* Data Management Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Kelola Data</Text>
@@ -836,6 +864,14 @@ const Profile = () => {
           </KeyboardAvoidingView>
         </SafeAreaView>
       </Modal>
+
+
+     {/* Statistics Modal */}
+      <StatisticsModal
+        isVisible={showStatisticsModal}
+        onClose={() => setShowStatisticsModal(false)}
+      />
+      
       {/* Categories Modal */}
       <Modal
         visible={showCategoryModal}

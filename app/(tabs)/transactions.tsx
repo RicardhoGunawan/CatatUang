@@ -18,7 +18,11 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
-import { transactionsAPI, Transaction } from "../../services/api";
+import {
+  transactionsAPI,
+  Transaction,
+  TransactionSummary,
+} from "../../services/api";
 import { useFocusEffect } from "@react-navigation/native";
 import AddTransactionModal from "../../components/AddTransactionModal";
 import EditTransactionModal from "../../components/EditTransactionModal";
@@ -28,6 +32,8 @@ export default function TransactionsScreen() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [monthlySummary, setMonthlySummary] =
+    useState<TransactionSummary | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
@@ -45,6 +51,24 @@ export default function TransactionsScreen() {
   const [groupedTransactions, setGroupedTransactions] = useState<{
     [key: string]: Transaction[];
   }>({});
+
+  const loadMonthlySummary = async (date: Date) => {
+    try {
+      const startDate = new Date(date.getFullYear(), date.getMonth(), 1);
+      const endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+      const response = await transactionsAPI.getSummary({
+        start_date: startDate.toLocaleDateString("en-CA"),
+        end_date: endDate.toLocaleDateString("en-CA"),
+      });
+
+      if (response.success && response.data) {
+        setMonthlySummary(response.data);
+      }
+    } catch (error) {
+      console.error("Error loading monthly summary:", error);
+    }
+  };
 
   // Generate months for date picker
   const generateMonths = () => {
@@ -67,6 +91,7 @@ export default function TransactionsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadTransactions(true);
+      loadMonthlySummary(selectedDate);
     }, [filterType, selectedDate])
   );
 
@@ -88,12 +113,13 @@ export default function TransactionsScreen() {
       const endDate = new Date(
         selectedDate.getFullYear(),
         selectedDate.getMonth() + 1,
+        0
       );
 
       const params: any = {
         page: refresh ? 1 : currentPage + 1,
-        start_date: startDate.toISOString().split("T")[0],
-        end_date: endDate.toISOString().split("T")[0],
+        start_date: startDate.toLocaleDateString("en-CA"),
+        end_date: endDate.toLocaleDateString("en-CA"),
         ...(filterType !== "all" && { type: filterType }),
       };
 
@@ -114,6 +140,9 @@ export default function TransactionsScreen() {
         groupTransactionsByDate(
           refresh ? newTransactions : [...transactions, ...newTransactions]
         );
+        if (refresh) {
+          loadMonthlySummary(selectedDate);
+        }
       }
     } catch (error) {
       console.error("Error loading transactions:", error);
@@ -175,6 +204,9 @@ export default function TransactionsScreen() {
           style: "destructive",
           onPress: async () => {
             try {
+              // Simpan data transaksi sebelum dihapus untuk cek bulan
+              const deletedTransaction = transactions.find((t) => t.id === id);
+
               const response = await transactionsAPI.delete(id);
               if (response.success) {
                 const updatedTransactions = transactions.filter(
@@ -182,6 +214,28 @@ export default function TransactionsScreen() {
                 );
                 setTransactions(updatedTransactions);
                 groupTransactionsByDate(updatedTransactions);
+
+                // Update summary bulan yang sedang ditampilkan
+                loadMonthlySummary(selectedDate);
+
+                // Jika transaksi yang dihapus bukan dari bulan yang sedang ditampilkan
+                if (deletedTransaction) {
+                  const transactionDate = new Date(
+                    deletedTransaction.transaction_date
+                  );
+                  const currentSelectedMonth = selectedDate.getMonth();
+                  const currentSelectedYear = selectedDate.getFullYear();
+                  const transactionMonth = transactionDate.getMonth();
+                  const transactionYear = transactionDate.getFullYear();
+
+                  if (
+                    transactionMonth !== currentSelectedMonth ||
+                    transactionYear !== currentSelectedYear
+                  ) {
+                    loadMonthlySummary(transactionDate);
+                  }
+                }
+
                 Alert.alert("Berhasil", "Transaksi berhasil dihapus");
               }
             } catch (error) {
@@ -193,20 +247,77 @@ export default function TransactionsScreen() {
       ]
     );
   };
+  const refreshAllAffectedSummaries = (transactionDate: Date) => {
+    // Refresh summary bulan yang sedang ditampilkan
+    loadMonthlySummary(selectedDate);
+
+    // Refresh summary bulan dari transaksi jika berbeda
+    const currentSelectedMonth = selectedDate.getMonth();
+    const currentSelectedYear = selectedDate.getFullYear();
+    const transactionMonth = transactionDate.getMonth();
+    const transactionYear = transactionDate.getFullYear();
+
+    if (
+      transactionMonth !== currentSelectedMonth ||
+      transactionYear !== currentSelectedYear
+    ) {
+      loadMonthlySummary(transactionDate);
+    }
+  };
 
   const handleEdit = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setShowEditModal(true);
   };
 
-  const handleTransactionAdded = () => {
+  const handleTransactionAdded = (newTransaction?: Transaction) => {
     loadTransactions(true);
+
+    // Jika ada data transaksi baru, cek apakah perlu update summary bulan lain
+    if (newTransaction) {
+      const transactionDate = new Date(newTransaction.transaction_date);
+      const currentSelectedMonth = selectedDate.getMonth();
+      const currentSelectedYear = selectedDate.getFullYear();
+      const transactionMonth = transactionDate.getMonth();
+      const transactionYear = transactionDate.getFullYear();
+
+      // Jika transaksi bukan di bulan yang sedang ditampilkan, update summary bulan transaksi
+      if (
+        transactionMonth !== currentSelectedMonth ||
+        transactionYear !== currentSelectedYear
+      ) {
+        loadMonthlySummary(transactionDate);
+      }
+    }
+
+    // Selalu update summary bulan yang sedang ditampilkan
+    loadMonthlySummary(selectedDate);
   };
 
-  const handleTransactionUpdated = () => {
+  const handleTransactionUpdated = (updatedTransaction?: Transaction) => {
     setShowEditModal(false);
     setSelectedTransaction(null);
     loadTransactions(true);
+
+    // Jika ada data transaksi yang diupdate, cek apakah perlu update summary bulan lain
+    if (updatedTransaction) {
+      const transactionDate = new Date(updatedTransaction.transaction_date);
+      const currentSelectedMonth = selectedDate.getMonth();
+      const currentSelectedYear = selectedDate.getFullYear();
+      const transactionMonth = transactionDate.getMonth();
+      const transactionYear = transactionDate.getFullYear();
+
+      // Jika transaksi bukan di bulan yang sedang ditampilkan, update summary bulan transaksi
+      if (
+        transactionMonth !== currentSelectedMonth ||
+        transactionYear !== currentSelectedYear
+      ) {
+        loadMonthlySummary(transactionDate);
+      }
+    }
+
+    // Selalu update summary bulan yang sedang ditampilkan
+    loadMonthlySummary(selectedDate);
   };
 
   const formatCurrency = (amount: number) => {
@@ -228,22 +339,12 @@ export default function TransactionsScreen() {
 
   const formatDateGroup = (dateString: string) => {
     const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return "Hari Ini";
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return "Kemarin";
-    } else {
-      return date.toLocaleDateString("id-ID", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      });
-    }
+    return date.toLocaleDateString("id-ID", {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
   };
 
   const formatMonthYear = (date: Date) => {
@@ -342,6 +443,54 @@ export default function TransactionsScreen() {
         </Text>
         <MaterialIcons name="keyboard-arrow-down" size={20} color="#007AFF" />
       </TouchableOpacity>
+
+      {/* Monthly Summary Card */}
+      {monthlySummary && (
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>
+            Ringkasan {formatMonthYear(selectedDate)}
+          </Text>
+          <View style={styles.summaryContent}>
+            <View style={styles.summaryItem}>
+              <View style={styles.summaryItemHeader}>
+                <MaterialIcons name="trending-up" size={20} color="#28a745" />
+                <Text style={styles.summaryLabel}>Pemasukan</Text>
+              </View>
+              <Text style={styles.summaryIncome}>
+                {formatCurrency(monthlySummary.summary.total_income)}
+              </Text>
+            </View>
+
+            <View style={styles.summaryDivider} />
+
+            <View style={styles.summaryItem}>
+              <View style={styles.summaryItemHeader}>
+                <MaterialIcons name="trending-down" size={20} color="#dc3545" />
+                <Text style={styles.summaryLabel}>Pengeluaran</Text>
+              </View>
+              <Text style={styles.summaryExpense}>
+                {formatCurrency(monthlySummary.summary.total_expense)}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.balanceContainer}>
+            <Text style={styles.balanceLabel}>Saldo Bersih</Text>
+            <Text
+              style={[
+                styles.balanceAmount,
+                {
+                  color:
+                    monthlySummary.summary.balance >= 0 ? "#28a745" : "#dc3545",
+                },
+              ]}
+            >
+              {monthlySummary.summary.balance >= 0 ? "+" : ""}
+              {formatCurrency(monthlySummary.summary.balance)}
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -462,8 +611,8 @@ export default function TransactionsScreen() {
                         {transaction.description || "Tidak ada deskripsi"}
                       </Text>
                       <Text style={styles.transactionDate}>
-                        {formatDate(transaction.transaction_date)}{" "}
-                        • {transaction.wallet?.name || "Dompet"}
+                        {formatDate(transaction.transaction_date)} •{" "}
+                        {transaction.wallet?.name || "Dompet"}
                       </Text>
                     </View>
                     <View style={styles.transactionRight}>
@@ -551,7 +700,7 @@ export default function TransactionsScreen() {
             </View>
             <FlatList
               data={availableMonths}
-              keyExtractor={(item) => item.toISOString()}
+              keyExtractor={(item) => item.toLocaleDateString("en-CA")}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={[
@@ -939,5 +1088,79 @@ const styles = StyleSheet.create({
   monthItemTextSelected: {
     color: "#007AFF",
     fontWeight: "600",
+  },
+  summaryCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  summaryTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2c3e50",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  summaryContent: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+  },
+  summaryItem: {
+    flex: 1,
+  },
+  summaryItemHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  summaryLabel: {
+    fontSize: 14,
+    color: "#666",
+    marginLeft: 8,
+    fontWeight: "500",
+  },
+  summaryIncome: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#28a745",
+  },
+  summaryExpense: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#dc3545",
+  },
+  summaryDivider: {
+    width: 1,
+    backgroundColor: "#e0e0e0",
+    marginHorizontal: 16,
+  },
+  balanceContainer: {
+    backgroundColor: "#f8f9fa",
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  balanceLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2c3e50",
+  },
+  balanceAmount: {
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
