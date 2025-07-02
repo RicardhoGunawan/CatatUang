@@ -735,7 +735,7 @@ export const StatisticsModal: React.FC<StatisticsModalProps> = ({
                         }}
                         accessor="amount"
                         backgroundColor="transparent"
-                        paddingLeft="65"
+                        paddingLeft="68"
                         center={[10, 10]}
                         absolute
                         hasLegend={false}
@@ -928,7 +928,7 @@ export const StatisticsModal: React.FC<StatisticsModalProps> = ({
                         chartConfig={chartConfig}
                         accessor="amount"
                         backgroundColor="transparent"
-                        paddingLeft="65"
+                        paddingLeft="68"
                         center={[10, 10]}
                         absolute
                         hasLegend={false}
