@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Base URL untuk API Laravel
-const BASE_URL = 'https://api-catatuang-production.up.railway.app'; // Sesuaikan dengan IP Laravel server Anda
+const BASE_URL = 'https://api-catatuang-production.up.railway.app/api'; // Sesuaikan dengan IP Laravel server Anda
 
 // Buat instance axios
 const api = axios.create({
