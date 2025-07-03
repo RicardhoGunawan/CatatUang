@@ -7,8 +7,8 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, password_confirmation: string) => Promise<void>;
+  login: (login: string, password: string) => Promise<void>; // login bisa email atau username
+  register: (name: string, username: string, email: string, password: string, password_confirmation: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Verify token masih valid dengan hit API profile
         try {
           const response = await authAPI.getProfile();
-          if (response.success && response.data) {
+          if (response.status === 'success' && response.data) {
             setUser(response.data);
             await AsyncStorage.setItem('user_data', JSON.stringify(response.data));
           }
@@ -84,10 +84,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (login: string, password: string) => {
     try {
       setIsLoading(true);
-      const response = await authAPI.login(email, password);
+      const response = await authAPI.login(login, password);
       
       if (response.status === 'success' && response.data) {
         await saveAuthData(response.data.token, response.data.user);
@@ -99,8 +99,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Handle different error types
       if (error.response?.status === 401) {
-        throw new Error('Email atau password salah');
+        throw new Error('Username/Email atau password salah');
       } else if (error.response?.status === 422) {
+        const errors = error.response.data.errors;
+        if (errors) {
+          const errorMessages = Object.values(errors).flat();
+          throw new Error(errorMessages.join(', '));
+        }
         throw new Error('Data tidak valid');
       } else if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
@@ -112,10 +117,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (name: string, email: string, password: string, password_confirmation: string) => {
+  const register = async (name: string, username: string, email: string, password: string, password_confirmation: string) => {
     try {
       setIsLoading(true);
-      const response = await authAPI.register(name, email, password, password_confirmation);
+      const response = await authAPI.register(name, username, email, password, password_confirmation);
       
       if (response.status === 'success' && response.data) {
         await saveAuthData(response.data.token, response.data.user);
@@ -172,7 +177,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!token) return;
       
       const response = await authAPI.getProfile();
-      if (response.success && response.data) {
+      if (response.status === 'success' && response.data) {
         setUser(response.data);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.data));
       } else {

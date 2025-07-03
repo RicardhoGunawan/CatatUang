@@ -19,29 +19,24 @@ import { Ionicons } from "@expo/vector-icons";
 import SuccessModal from "../../components/SuccessModal"; // Import komponen modal
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState("");
+  const [login, setLogin] = useState(""); // Changed from email to login
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false); // State untuk modal
 
-  const { login } = useAuth();
+  const { login: authLogin } = useAuth();
   const router = useRouter();
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Mohon isi email dan password");
-      return;
-    }
-
-    if (!isValidEmail(email)) {
-      Alert.alert("Error", "Format email tidak valid");
+    if (!login || !password) {
+      Alert.alert("Error", "Mohon isi username/email dan password");
       return;
     }
 
     try {
       setIsLoading(true);
-      await login(email, password);
+      await authLogin(login, password);
       
       // Tampilkan modal success
       setShowSuccessModal(true);
@@ -52,11 +47,6 @@ export default function LoginScreen() {
     }
   };
 
-  const isValidEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
   const navigateToRegister = () => {
     router.push("/(auth)/register");
   };
@@ -64,6 +54,24 @@ export default function LoginScreen() {
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
     router.replace("/(tabs)"); // Navigasi ke tabs setelah modal ditutup
+  };
+
+  // Helper function to determine if input is email or username
+  const isEmail = (input: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(input);
+  };
+
+  // Get placeholder text based on input type
+  const getPlaceholderText = () => {
+    if (login === "") return "Username atau Email";
+    return isEmail(login) ? "Email" : "Username";
+  };
+
+  // Get icon based on input type
+  const getInputIcon = () => {
+    if (login === "") return "person-outline";
+    return isEmail(login) ? "mail-outline" : "person-outline";
   };
 
   return (
@@ -87,28 +95,33 @@ export default function LoginScreen() {
             <Text style={styles.subtitle}>Masuk ke akun Anda</Text>
           </View>
           <View style={styles.form}>
-            {/* Email Input */}
+            {/* Login Input (Username or Email) */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>Username atau Email</Text>
               <View style={styles.inputWrapper}>
                 <Ionicons
-                  name="mail-outline"
+                  name={getInputIcon()}
                   size={20}
                   color="#7f8c8d"
                   style={styles.inputIcon}
                 />
                 <TextInput
                   style={styles.inputWithIcon}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="Masukkan email Anda"
+                  value={login}
+                  onChangeText={setLogin}
+                  placeholder={getPlaceholderText()}
                   placeholderTextColor="#a0a0a0"
-                  keyboardType="email-address"
+                  keyboardType={isEmail(login) ? "email-address" : "default"}
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!isLoading}
                 />
               </View>
+              {/* {login !== "" && (
+                <Text style={styles.inputHint}>
+                  {isEmail(login) ? "📧 Email terdeteksi" : "👤 Username terdeteksi"}
+                </Text>
+              )} */}
             </View>
 
             {/* Password Input */}
@@ -188,7 +201,7 @@ export default function LoginScreen() {
         message="Selamat datang kembali! Anda akan diarahkan ke halaman utama."
         onClose={handleSuccessModalClose}
         autoClose={true}
-        autoCloseDelay={500} // 1 detik
+        autoCloseDelay={500} // 0.5 detik
       />
     </SafeAreaView>
   );
@@ -275,6 +288,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingVertical: 14,
     color: "#2c3e50",
+  },
+  inputHint: {
+    fontSize: 12,
+    color: "#007AFF",
+    marginTop: 6,
+    fontWeight: "500",
   },
   eyeButton: {
     padding: 8,

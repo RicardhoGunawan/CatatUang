@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -19,6 +20,7 @@ import SuccessModal from "../../components/SuccessModal"; // Import komponen mod
 
 export default function RegisterScreen() {
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -31,13 +33,18 @@ export default function RegisterScreen() {
   const router = useRouter();
 
   const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !username || !email || !password || !confirmPassword) {
       Alert.alert("Error", "Mohon isi semua field");
       return;
     }
 
     if (!isValidEmail(email)) {
       Alert.alert("Error", "Format email tidak valid");
+      return;
+    }
+
+    if (username.length < 3) {
+      Alert.alert("Error", "Username minimal 3 karakter");
       return;
     }
 
@@ -53,8 +60,8 @@ export default function RegisterScreen() {
 
     try {
       setIsLoading(true);
-      await register(name, email, password, confirmPassword);
-      
+      await register(name, username, email, password, confirmPassword);
+
       // Tampilkan modal success
       setShowSuccessModal(true);
     } catch (error: any) {
@@ -90,9 +97,11 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <Ionicons name="wallet" size={48} color="#007AFF" />
-            </View>
+            <Image
+              source={require("../../assets/images/wallet.png")}
+              style={styles.logoContainer}
+              resizeMode="contain"
+            />
             <Text style={styles.title}>CatatUang</Text>
             <Text style={styles.subtitle}>Buat akun baru</Text>
           </View>
@@ -102,11 +111,11 @@ export default function RegisterScreen() {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Nama Lengkap</Text>
               <View style={styles.inputWrapper}>
-                <Ionicons 
-                  name="person-outline" 
-                  size={20} 
-                  color="#7f8c8d" 
-                  style={styles.inputIcon} 
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color="#7f8c8d"
+                  style={styles.inputIcon}
                 />
                 <TextInput
                   style={styles.inputWithIcon}
@@ -121,15 +130,38 @@ export default function RegisterScreen() {
               </View>
             </View>
 
+            {/* Username Input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Username</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons
+                  name="at-outline"
+                  size={20}
+                  color="#7f8c8d"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.inputWithIcon}
+                  value={username}
+                  onChangeText={setUsername}
+                  placeholder="Masukkan username unik"
+                  placeholderTextColor="#a0a0a0"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
+
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email</Text>
               <View style={styles.inputWrapper}>
-                <Ionicons 
-                  name="mail-outline" 
-                  size={20} 
-                  color="#7f8c8d" 
-                  style={styles.inputIcon} 
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color="#7f8c8d"
+                  style={styles.inputIcon}
                 />
                 <TextInput
                   style={styles.inputWithIcon}
@@ -149,11 +181,11 @@ export default function RegisterScreen() {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Password</Text>
               <View style={styles.inputWrapper}>
-                <Ionicons 
-                  name="lock-closed-outline" 
-                  size={20} 
-                  color="#7f8c8d" 
-                  style={styles.inputIcon} 
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color="#7f8c8d"
+                  style={styles.inputIcon}
                 />
                 <TextInput
                   style={styles.inputWithIcon}
@@ -185,11 +217,11 @@ export default function RegisterScreen() {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Konfirmasi Password</Text>
               <View style={styles.inputWrapper}>
-                <Ionicons 
-                  name="lock-closed-outline" 
-                  size={20} 
-                  color="#7f8c8d" 
-                  style={styles.inputIcon} 
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color="#7f8c8d"
+                  style={styles.inputIcon}
                 />
                 <TextInput
                   style={styles.inputWithIcon}
@@ -209,7 +241,9 @@ export default function RegisterScreen() {
                   activeOpacity={0.7}
                 >
                   <Ionicons
-                    name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                    name={
+                      showConfirmPassword ? "eye-off-outline" : "eye-outline"
+                    }
                     size={20}
                     color="#7f8c8d"
                   />
@@ -285,7 +319,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: 15,
     backgroundColor: "#e3f2fd",
     justifyContent: "center",
     alignItems: "center",

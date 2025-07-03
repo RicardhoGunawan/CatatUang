@@ -1,36 +1,37 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  RefreshControl,
-  Modal,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  StatusBar,
-  Dimensions,
-  Animated,
-  ActivityIndicator,
-} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { authAPI, User } from "../../services/api";
+import React, { useEffect, useState } from "react";
 import {
-  categoriesAPI,
-  walletTypesAPI,
-  Category,
-  WalletType,
-} from "../../services/api";
-import {StatisticsModal} from '../../components/StatisticsModal';
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
+import { StatisticsModal } from "../../components/StatisticsModal";
+import {
+  authAPI,
+  categoriesAPI,
+  Category,
+  User,
+  WalletType,
+  walletTypesAPI,
+} from "../../services/api";
 
 const { width } = Dimensions.get("window");
 
@@ -49,10 +50,10 @@ const Profile = () => {
     setShowStatisticsModal(true);
   };
 
-
   // Add missing state hooks
   const [editForm, setEditForm] = useState({
     name: "",
+    username: "",
     email: "",
     password: "",
     password_confirmation: "",
@@ -134,6 +135,7 @@ const Profile = () => {
         setUser(userData);
         setEditForm({
           name: userData.name || "",
+          username: userData.username || "",
           email: userData.email || "",
           password: "",
           password_confirmation: "",
@@ -443,6 +445,7 @@ const Profile = () => {
     if (user) {
       setEditForm({
         name: user.name || "",
+        username: user.username || "",
         email: user.email || "",
         password: "",
         password_confirmation: "",
@@ -456,6 +459,12 @@ const Profile = () => {
       // Validasi nama
       if (!editForm.name.trim()) {
         Alert.alert("Error", "Name is required");
+        return;
+      }
+
+      // Validasi username
+      if (!editForm.username.trim()) {
+        Alert.alert("Error", "Username is required");
         return;
       }
 
@@ -487,9 +496,10 @@ const Profile = () => {
       // Set loading state
       setUpdating(true);
 
-      // Siapkan data untuk update
+      // ✅ Siapkan data untuk update - TAMBAHKAN USERNAME
       const updateData: any = {
         name: editForm.name,
+        username: editForm.username, // ✅ Tambahkan username
         email: editForm.email,
       };
 
@@ -528,12 +538,22 @@ const Profile = () => {
       }
     } catch (error: any) {
       console.error("Update profile error:", error);
-      Alert.alert(
-        "Error",
-        error.response?.data?.message ||
-          error.message ||
-          "Failed to update profile"
-      );
+
+      // ✅ Tampilkan error yang lebih detail
+      let errorMessage = "Failed to update profile";
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.errors) {
+        // Handle validation errors
+        const errors = error.response.data.errors;
+        const errorMessages = Object.values(errors).flat();
+        errorMessage = errorMessages.join(", ");
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      Alert.alert("Error", errorMessage);
     } finally {
       setUpdating(false);
     }
@@ -652,26 +672,30 @@ const Profile = () => {
             </View>
           </View>
           {/* Tambahkan menu item untuk Statistics setelah Account Management */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Analisis</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Analisis</Text>
 
-        <View style={styles.menuContainer}>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleStatisticsPress}
-          >
-            <View style={styles.menuItemLeft}>
-              <View
-                style={[styles.menuIcon, { backgroundColor: "#E8F5E8" }]}
+            <View style={styles.menuContainer}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleStatisticsPress}
               >
-                <Ionicons name="analytics-outline" size={20} color="#4CAF50" />
-              </View>
-              <Text style={styles.menuItemText}>Statistik Keuangan</Text>
+                <View style={styles.menuItemLeft}>
+                  <View
+                    style={[styles.menuIcon, { backgroundColor: "#E8F5E8" }]}
+                  >
+                    <Ionicons
+                      name="analytics-outline"
+                      size={20}
+                      color="#4CAF50"
+                    />
+                  </View>
+                  <Text style={styles.menuItemText}>Statistik Keuangan</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#C1C1C1" />
+              </TouchableOpacity>
             </View>
-            <Ionicons name="chevron-forward" size={16} color="#C1C1C1" />
-          </TouchableOpacity>
-        </View>
-      </View>
+          </View>
           {/* Data Management Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Kelola Data</Text>
@@ -740,7 +764,6 @@ const Profile = () => {
         animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={() => setShowEditModal(false)} // Tambahkan ini
-
       >
         <SafeAreaView style={styles.modalContainer}>
           <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -795,21 +818,34 @@ const Profile = () => {
                     onChangeText={(text) =>
                       setEditForm((prev) => ({ ...prev, name: text }))
                     }
-                    placeholder="Enter your full name"
+                    placeholder="Masukan Nama lengkap"
+                    autoCapitalize="words"
+                    returnKeyType="next"
+                  />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Username *</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={editForm.username}
+                    onChangeText={(text) =>
+                      setEditForm((prev) => ({ ...prev, username: text }))
+                    }
+                    placeholder="masukan username"
                     autoCapitalize="words"
                     returnKeyType="next"
                   />
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Email Address *</Text>
+                  <Text style={styles.inputLabel}>Alamat Email *</Text>
                   <TextInput
                     style={styles.textInput}
                     value={editForm.email}
                     onChangeText={(text) =>
                       setEditForm((prev) => ({ ...prev, email: text }))
                     }
-                    placeholder="Enter your email"
+                    placeholder="Masukan Alamat Email"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     returnKeyType="next"
@@ -821,7 +857,7 @@ const Profile = () => {
               <View style={styles.formSection}>
                 <Text style={styles.formSectionTitle}>Ubah Password</Text>
                 <Text style={styles.formSectionSubtitle}>
-                  Leave blank if you don't want to change your password
+                  Kosongkan jika Anda tidak ingin mengubah kata sandi Anda
                 </Text>
 
                 <View style={styles.inputGroup}>
@@ -832,9 +868,8 @@ const Profile = () => {
                     onChangeText={(text) =>
                       setEditForm((prev) => ({ ...prev, password: text }))
                     }
-                    placeholder="Enter new password"
+                    placeholder="Masukan Password Baru"
                     placeholderTextColor="#777"
-
                     secureTextEntry
                     autoCapitalize="none"
                     returnKeyType="next"
@@ -852,7 +887,7 @@ const Profile = () => {
                         password_confirmation: text,
                       }))
                     }
-                    placeholder="Confirm new password"
+                    placeholder="Konfirmasi Password"
                     placeholderTextColor="#777"
                     secureTextEntry
                     autoCapitalize="none"
@@ -865,13 +900,12 @@ const Profile = () => {
         </SafeAreaView>
       </Modal>
 
-
-     {/* Statistics Modal */}
+      {/* Statistics Modal */}
       <StatisticsModal
         isVisible={showStatisticsModal}
         onClose={() => setShowStatisticsModal(false)}
       />
-      
+
       {/* Categories Modal */}
       <Modal
         visible={showCategoryModal}
@@ -1343,7 +1377,6 @@ const Profile = () => {
         animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={() => setShowWalletTypeForm(false)} // Tambahkan ini
-
       >
         <SafeAreaView style={styles.modalContainer}>
           <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />

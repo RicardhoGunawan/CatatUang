@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Base URL untuk API Laravel
-const BASE_URL = 'https://api-catatuang-production.up.railway.app/api'; // Sesuaikan dengan IP Laravel server Anda
+const BASE_URL = 'https://api-catatuang-production.up.railway.app'; // Sesuaikan dengan IP Laravel server Anda
 
 // Buat instance axios
 const api = axios.create({
@@ -49,6 +49,7 @@ api.interceptors.response.use(
 export interface User {
   id: number;
   name: string;
+  username: string;
   email: string;
   email_verified_at?: string;
   created_at: string;
@@ -74,6 +75,7 @@ export interface RegisterResponse {
 }
 
 export interface ApiResponse<T> {
+  status: string;
   success: boolean;
   message?: string;
   data?: T;
@@ -140,14 +142,26 @@ export interface TransactionSummary {
 
 // Auth API
 export const authAPI = {
-  login: async (email: string, password: string): Promise<LoginResponse> => {
-    const response = await api.post('/login', { email, password });
+  // Login menggunakan username atau email
+  login: async (login: string, password: string): Promise<LoginResponse> => {
+    const response = await api.post('/login', { 
+      login, // Field 'login' bisa berisi email atau username
+      password 
+    });
     return response.data;
   },
 
-  register: async (name: string, email: string, password: string, password_confirmation: string): Promise<RegisterResponse> => {
+  // Register dengan username
+  register: async (
+    name: string, 
+    username: string, 
+    email: string, 
+    password: string, 
+    password_confirmation: string
+  ): Promise<RegisterResponse> => {
     const response = await api.post('/register', {
       name,
+      username,
       email,
       password,
       password_confirmation,
@@ -160,12 +174,22 @@ export const authAPI = {
     return response.data;
   },
 
+  // Get user profile
   getProfile: async (): Promise<ApiResponse<User>> => {
     const response = await api.get('/profile');
     return response.data;
   },
+
+  // Get user data (alias untuk getProfile)
+  getUser: async (): Promise<ApiResponse<User>> => {
+    const response = await api.get('/user');
+    return response.data;
+  },
+
+  // Update profile dengan username
   updateProfile: async (data: {
     name?: string;
+    username?: string;
     email?: string;
     password?: string;
     password_confirmation?: string;
