@@ -12,7 +12,8 @@ import {
   StatusBar,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-
+import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import { useFocusEffect, useRouter } from "expo-router";
 import {
   SafeAreaView,
@@ -42,6 +43,21 @@ export default function HomeScreen() {
   const router = useRouter();
   // const { logout } = useAuth();
   const navigation = useNavigation();
+
+  useEffect(() => {
+    const requestPermissions = async () => {
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== "granted") {
+        const { status: newStatus } =
+          await Notifications.requestPermissionsAsync();
+        if (newStatus !== "granted") {
+          Alert.alert("Izin diperlukan", "Aplikasi perlu izin notifikasi");
+        }
+      }
+    };
+
+    requestPermissions();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -140,6 +156,63 @@ export default function HomeScreen() {
       month: "short",
       year: "numeric",
     });
+  };
+  const scheduleReminderNotification = async () => {
+    try {
+      console.log("⏰ Menjadwalkan notifikasi harian...");
+
+      const id = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Waktunya mencatat uang 💰",
+          body: "Jangan lupa catat pengeluaran dan pemasukanmu hari ini!",
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: 20,
+        },
+      });
+
+      console.log("✅ Notifikasi dijadwalkan dengan ID:", id);
+
+      Alert.alert(
+        "Reminder diaktifkan",
+        "Notifikasi harian akan muncul jam 8 malam."
+      );
+    } catch (error) {
+      console.error("❌ Gagal menjadwalkan notifikasi:", error);
+    }
+  };
+
+  const cancelAllNotifications = async () => {
+    try {
+      console.log("🛑 Membatalkan semua notifikasi yang terjadwal...");
+      await Notifications.cancelAllScheduledNotificationsAsync();
+
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      console.log("✅ Sisa notifikasi setelah cancel:", scheduled);
+
+      Alert.alert("Reminder dimatikan", "Semua notifikasi telah dibatalkan.");
+    } catch (error) {
+      console.error("❌ Gagal membatalkan notifikasi:", error);
+    }
+  };
+
+  const triggerTestNotification = async () => {
+    try {
+      console.log("🔔 Menjalankan test notifikasi lokal...");
+      const id = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "🔔 Test Notifikasi",
+          body: "Ini adalah notifikasi test dari aplikasi kamu!",
+          data: { screen: "transactions" },
+        },
+        trigger: null, // langsung tampil
+      });
+
+      console.log("✅ Test notifikasi muncul dengan ID:", id);
+    } catch (error) {
+      console.error("❌ Gagal menjalankan test notifikasi:", error);
+    }
   };
 
   if (isLoading) {
@@ -416,6 +489,47 @@ export default function HomeScreen() {
 
         {/* Bottom spacing for better scrolling experience */}
         <View style={styles.bottomSpacing} />
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#4A90E2",
+            padding: 12,
+            marginTop: 20,
+            borderRadius: 8,
+          }}
+          onPress={async () => {
+            const existing =
+              await Notifications.getAllScheduledNotificationsAsync();
+            console.log("📋 Notifikasi yang sudah ada:", existing);
+
+            if (existing.length === 0) {
+              console.log(
+                "🔁 Tidak ada notifikasi aktif. Menjadwalkan baru..."
+              );
+              await scheduleReminderNotification();
+            } else {
+              console.log("🔁 Ada notifikasi aktif. Membatalkan...");
+              await cancelAllNotifications();
+            }
+          }}
+        >
+          <Text style={{ color: "#fff", textAlign: "center" }}>
+            Toggle Pengingat Harian
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#34C759",
+            padding: 12,
+            marginTop: 10,
+            borderRadius: 8,
+          }}
+          onPress={triggerTestNotification}
+        >
+          <Text style={{ color: "#fff", textAlign: "center" }}>
+            🔔 Test Notifikasi Sekarang
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
