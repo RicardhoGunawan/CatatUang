@@ -14,9 +14,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useAuth } from "../../contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
-import SuccessModal from "../../components/SuccessModal"; // Import komponen modal
+import { authAPI } from "../../services/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function RegisterScreen() {
   const [name, setName] = useState("");
@@ -27,9 +27,7 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false); // State untuk modal
 
-  const { register } = useAuth();
   const router = useRouter();
 
   const handleRegister = async () => {
@@ -60,12 +58,35 @@ export default function RegisterScreen() {
 
     try {
       setIsLoading(true);
-      await register(name, username, email, password, confirmPassword);
+      const response = await authAPI.register(name, username, email, password, confirmPassword);
 
-      // Tampilkan modal success
-      setShowSuccessModal(true);
+      if (response.status === "success") {
+        // Simpan token dan data user setelah registrasi
+        await AsyncStorage.setItem('auth_token', response.data.token);
+        await AsyncStorage.setItem('user_data', JSON.stringify(response.data.user));
+
+        // Navigasi ke halaman OTP dengan parameter email dan fromRegistration
+        router.push({
+          pathname: "./otp",
+          params: {
+            email: email,
+            fromRegistration: "true"
+          }
+        });
+      }
     } catch (error: any) {
-      Alert.alert("Registrasi Gagal", error.message);
+      let errorMessage = "Registrasi gagal. Silakan coba lagi.";
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.errors) {
+        // Handle validation errors
+        const errors = error.response.data.errors;
+        const errorMessages = Object.values(errors).flat();
+        errorMessage = errorMessages.join(", ");
+      }
+      
+      Alert.alert("Registrasi Gagal", errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -78,11 +99,6 @@ export default function RegisterScreen() {
 
   const navigateToLogin = () => {
     router.push("/(auth)/login");
-  };
-
-  const handleSuccessModalClose = () => {
-    setShowSuccessModal(false);
-    router.replace("/(auth)/login"); // Navigasi ke login setelah modal ditutup
   };
 
   return (
@@ -282,18 +298,24 @@ export default function RegisterScreen() {
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* Registration Info */}
+          <View style={styles.infoContainer}>
+            <View style={styles.infoItem}>
+              <Ionicons name="mail-outline" size={16} color="#007AFF" />
+              <Text style={styles.infoText}>
+                Setelah registrasi, Anda akan menerima kode OTP melalui email
+              </Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Ionicons name="shield-checkmark-outline" size={16} color="#007AFF" />
+              <Text style={styles.infoText}>
+                Verifikasi email diperlukan untuk menggunakan semua fitur
+              </Text>
+            </View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* Success Modal */}
-      <SuccessModal
-        visible={showSuccessModal}
-        title="Registrasi Berhasil!"
-        message="Akun Anda telah berhasil dibuat. Silakan login untuk melanjutkan menggunakan aplikasi."
-        buttonText="Login Sekarang"
-        onClose={handleSuccessModalClose}
-        onButtonPress={handleSuccessModalClose}
-      />
     </SafeAreaView>
   );
 }
@@ -350,6 +372,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 8,
+    marginBottom: 24,
   },
   inputContainer: {
     marginBottom: 24,
@@ -431,5 +454,30 @@ const styles = StyleSheet.create({
     color: "#007AFF",
     fontWeight: "600",
     letterSpacing: 0.3,
+  },
+  infoContainer: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  infoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  infoText: {
+    fontSize: 14,
+    color: "#7f8c8d",
+    marginLeft: 8,
+    flex: 1,
+    lineHeight: 20,
   },
 });

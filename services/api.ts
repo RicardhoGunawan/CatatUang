@@ -2,6 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Base URL untuk API Laravel
+/**Dev: https://31eb0a0f6448.ngrok-free.app */
 const BASE_URL = 'https://api-catatuang-production.up.railway.app/api'; // Sesuaikan dengan IP Laravel server Anda
 
 // Buat instance axios
@@ -62,6 +63,7 @@ export interface LoginResponse {
   data: {
     user: User;
     token: string;
+    email_verified: boolean;
   };
 }
 
@@ -71,6 +73,26 @@ export interface RegisterResponse {
   data: {
     user: User;
     token: string;
+    email_verified: boolean;
+  };
+}
+
+export interface OtpVerificationResponse {
+  status: string;
+  message: string;
+  data: {
+    user: User;
+    email_verified: boolean;
+  };
+}
+
+export interface EmailVerificationStatusResponse {
+  status: string;
+  data: {
+    email_verified: boolean;
+    email_verified_at?: string;
+    has_pending_otp: boolean;
+    otp_expires_at?: string;
   };
 }
 
@@ -166,6 +188,26 @@ export const authAPI = {
       password,
       password_confirmation,
     });
+    return response.data;
+  },
+
+  // Verifikasi email dengan kode OTP
+  verifyEmailOtp: async (otp_code: string): Promise<OtpVerificationResponse> => {
+    const response = await api.post('/email/verify-otp', {
+      otp_code,
+    });
+    return response.data;
+  },
+
+  // Kirim ulang kode OTP
+  resendOtp: async (): Promise<ApiResponse<null>> => {
+    const response = await api.post('/email/resend-otp');
+    return response.data;
+  },
+
+  // Cek status verifikasi email
+  getEmailVerificationStatus: async (): Promise<EmailVerificationStatusResponse> => {
+    const response = await api.get('/email/verification-status');
     return response.data;
   },
 
